@@ -15,8 +15,8 @@ lr=0.01
 weight_decay=0
 
 #transe training parameters:
-batch_size=128
-epoch=10
+batch_size=36
+epoch=100
 
 #set torch seeds:
 seed=2022
