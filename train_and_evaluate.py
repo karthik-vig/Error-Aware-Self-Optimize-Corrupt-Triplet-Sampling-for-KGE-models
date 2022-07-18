@@ -26,6 +26,7 @@ class TransE_train_evaluate():
 
 
     def evaluate_model(self):
+        print('Starting Evaluation:')
         tail_score_tensor = torch.zeros(self.val_dataset_len, dtype=torch.float64).to(self.device)
         epoch = 0
         for triplet in self.val_dataset:
@@ -67,6 +68,7 @@ class TransE_train_evaluate():
 
 
     def train_transe(self):
+        print('Starting Training:')
         for i in range(1, self.epoch + 1):
             avg_train_loss = 0
             for index, batch_data in enumerate(self.train_data_loader):

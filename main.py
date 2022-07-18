@@ -80,3 +80,15 @@ if __name__ == '__main__':
         transe_model = torch.load('transe_model.pt')
         print('Done!')
 
+        transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k_train_dataset,
+                                                      val_dataset=fb15k_val_dataset,
+                                                      batch_size=None,
+                                                      num_entity=num_entity,
+                                                      model=transe_model,
+                                                      device=device,
+                                                      optimizer=None,
+                                                      epoch=None,
+                                                      seed=seed)
+
+        # Evaluate TransE model:
+        transe_model_train_eva.evaluate_model()
