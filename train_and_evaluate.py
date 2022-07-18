@@ -27,11 +27,13 @@ class TransE_train_evaluate():
 
     def evaluate_model(self):
         print('Starting Evaluation:')
-        tail_score_tensor = torch.zeros(self.val_dataset_len, dtype=torch.float64).to(self.device)
+        score_tensor = torch.zeros(self.val_dataset_len * 2, dtype=torch.float64).to(self.device)
         epoch = 0
+        rank_count = 0
+        test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64)
         for triplet in self.val_dataset:
+            #calculate the tail rank:
             original_tail = triplet[0][2]
-            test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64)
             test_triplet[:, 0] = triplet[0][0]
             test_triplet[:, 1] = triplet[0][1]
             test_triplet[:, 2] = torch.arange(0, self.num_entity, dtype=torch.int64)
@@ -42,13 +44,30 @@ class TransE_train_evaluate():
             tail_rank = (sorted_score_index == original_tail).nonzero()[0, 0]
             del sorted_score_index
             tail_rank += torch.tensor(1)
-            tail_score_tensor[epoch] = tail_rank
+
+            #calculate the head rank:
+            original_head = triplet[0][0]
+            test_triplet[:, 0] = torch.arange(0, self.num_entity, dtype=torch.int64)
+            test_triplet[:, 1] = triplet[0][1]
+            test_triplet[:, 2] = triplet[0][2]
+            test_triplet = test_triplet.to(self.device)
+            score = self.model.cal_distance(test_triplet)
+            sorted_score_index = torch.argsort(score)
+            del score
+            head_rank = (sorted_score_index == original_head).nonzero()[0, 0]
+            del sorted_score_index
+            head_rank += torch.tensor(1)
+
+            # Add rank values to a tensor:
+            score_tensor[rank_count] = tail_rank
+            score_tensor[rank_count + 1] = head_rank
+            rank_count += 2
             epoch += 1
             if epoch % 5000 == 0:
                 print('Triplets evaluated: ', epoch)
-        tail_mr_score = torch.mean(tail_score_tensor)
-        tail_mrr_score = torch.reciprocal(tail_score_tensor).mean()
-        tail_hit_at_10_score = torch.where(tail_score_tensor < 11.0, 1.0, 0.0).mean()
+        tail_mr_score = torch.mean(score_tensor)
+        tail_mrr_score = torch.reciprocal(score_tensor).mean()
+        tail_hit_at_10_score = torch.where(score_tensor < 11.0, 1.0, 0.0).mean()
 
         print('Mean Rank for tail prediction is: ', tail_mr_score)
         print('Mean Reciprocal Rank for tail prediction is: ', tail_mrr_score)
