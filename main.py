@@ -35,17 +35,27 @@ if __name__ == '__main__':
     print('FB15K validation dataset size: ', fb15k_val_dataset.shape)
     print('FB15K testing dataset size: ', fb15k_test_dataset.shape)
 
-    select_train_model = input('Train a new model?(y/n) : ')
+    select_train_model = input('Train a TransE model?(y/n) : ')
 
     if select_train_model == 'y':
 
-        #Create the transe model:
-        transe_model = TransE(device=device,
-                             num_entity=num_entity,
-                             num_relation=num_relation,
-                             emb_dim=emb_dim,
-                             gamma=gamma,
-                             seed=seed)
+        continue_train = input('Continue training a saved model? (y/n) : ')
+
+        if continue_train == 'y':
+
+            print('Loading a TransE model from disk...')
+            transe_model = torch.load('transe_model.pt')
+            print('Done!')
+
+        elif continue_train == 'n':
+
+            #Create the transe model:
+            transe_model = TransE(device=device,
+                                 num_entity=num_entity,
+                                 num_relation=num_relation,
+                                 emb_dim=emb_dim,
+                                 gamma=gamma,
+                                 seed=seed)
 
         #Create the optimizer:
         optimizer = torch.optim.SGD(transe_model.parameters(),
