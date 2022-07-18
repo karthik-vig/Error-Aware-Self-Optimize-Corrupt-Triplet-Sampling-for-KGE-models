@@ -3,10 +3,10 @@ import torch.nn as nn
 
 
 class TransE(nn.Module):
-    def __init__(self, device, num_entity, num_relation, emb_dim, gamma):
+    def __init__(self, device, num_entity, num_relation, emb_dim, gamma, seed):
         super(TransE, self).__init__()
-        torch.manual_seed(2022)
-        torch.cuda.manual_seed_all(2022)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
         self.device = device
         self.emb_dim = emb_dim
         self.num_entity = num_entity
@@ -22,7 +22,7 @@ class TransE(nn.Module):
         self.loss_fn = nn.MarginRankingLoss(margin=gamma)
 
     def initialize_emb(self, num_emb, emb_dim):
-        emb_weight_range = 6 / torch.sqrt(emb_dim)
+        emb_weight_range = 6 / torch.sqrt(torch.tensor(emb_dim))
         emb = nn.Embedding(num_embeddings=num_emb, embedding_dim=emb_dim, device=self.device)
         emb.weight.data.uniform_(-emb_weight_range, emb_weight_range)
         return emb

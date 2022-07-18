@@ -3,9 +3,9 @@ from torch.utils.data import TensorDataset, DataLoader
 
 
 class TransE_train_evaluate():
-    def __init__(self, train_dataset, val_dataset, batch_size, num_entity, model, device, optimizer, epoch):
-        torch.manual_seed(2022)
-        torch.cuda.manual_seed_all(2022)
+    def __init__(self, train_dataset, val_dataset, batch_size, num_entity, model, device, optimizer, epoch, seed):
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
         self.train_dataset = train_dataset
         self.val_dataset = TensorDataset(val_dataset)
         self.batch_size = batch_size

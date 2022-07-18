@@ -19,8 +19,9 @@ batch_size=36
 epoch=10
 
 #set torch seeds:
-torch.manual_seed(2022)
-torch.cuda.manual_seed_all(2022)
+seed=2022
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
 
 if __name__ == '__main__':
     #get training, validation and testing tensors from fb15k
@@ -43,7 +44,8 @@ if __name__ == '__main__':
                                      num_entity=num_entity,
                                      num_relation=num_relation,
                                      emb_dim=emb_dim,
-                                     gamma=gamma)
+                                     gamma=gamma,
+                                     seed=seed)
 
         #Create the optimizer:
         optimizer = torch.optim.SGD(transe_model.parameters(),
@@ -58,7 +60,8 @@ if __name__ == '__main__':
                                                                           model=transe_model,
                                                                           device=device,
                                                                           optimizer=optimizer,
-                                                                          epoch=epoch)
+                                                                          epoch=epoch,
+                                                                          seed=seed)
         transe_model_train_eva.train_transe()
 
         select_save_model = input('Save model ?(y/n) :')
