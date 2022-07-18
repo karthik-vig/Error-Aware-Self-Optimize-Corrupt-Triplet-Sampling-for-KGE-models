@@ -75,7 +75,7 @@ class TransE_train_evaluate():
                 sample_data = sample_data.to(self.device)
                 corr_sample_data = corr_sample_data.to(self.device)
                 loss = self.model(sample_data, corr_sample_data)
-                avg_train_loss = loss.sum()
+                avg_train_loss += loss.sum()
                 loss = loss.mean()
                 self.optimizer.zero_grad()
                 loss.backward()

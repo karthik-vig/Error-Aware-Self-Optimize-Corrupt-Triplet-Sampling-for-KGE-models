@@ -41,11 +41,11 @@ if __name__ == '__main__':
 
         #Create the transe model:
         transe_model = TransE(device=device,
-                                     num_entity=num_entity,
-                                     num_relation=num_relation,
-                                     emb_dim=emb_dim,
-                                     gamma=gamma,
-                                     seed=seed)
+                             num_entity=num_entity,
+                             num_relation=num_relation,
+                             emb_dim=emb_dim,
+                             gamma=gamma,
+                             seed=seed)
 
         #Create the optimizer:
         optimizer = torch.optim.SGD(transe_model.parameters(),
@@ -54,23 +54,29 @@ if __name__ == '__main__':
 
         #Train the model:
         transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k_train_dataset,
-                                                                          val_dataset=fb15k_val_dataset,
-                                                                          batch_size=batch_size,
-                                                                          num_entity=num_entity,
-                                                                          model=transe_model,
-                                                                          device=device,
-                                                                          optimizer=optimizer,
-                                                                          epoch=epoch,
-                                                                          seed=seed)
+                                                      val_dataset=fb15k_val_dataset,
+                                                      batch_size=batch_size,
+                                                      num_entity=num_entity,
+                                                      model=transe_model,
+                                                      device=device,
+                                                      optimizer=optimizer,
+                                                      epoch=epoch,
+                                                      seed=seed)
+        #train TransE model:
         transe_model_train_eva.train_transe()
+
+        #Evaluate TransE model:
+        transe_model_train_eva.evaluate_model()
 
         select_save_model = input('Save model ?(y/n) :')
         if select_save_model == 'y':
             torch.save(transe_model, 'transe_model.pt')
             print('Saving done!')
 
+
     elif select_train_model == 'n':
 
         print('Loading a TransE model from disk...')
         transe_model = torch.load('transe_model.pt')
         print('Done!')
+
