@@ -1,12 +1,12 @@
 import torch
-from pykeen.datasets import FB15k
+from pykeen.datasets import FB15k237
 from models import TransE
 from train_and_evaluate import TransE_train_evaluate
 
 #set transe model paratmeters:
 device='cuda'
-num_entity=14951
-num_relation=1345
+num_entity=14505
+num_relation=237
 emb_dim=50
 gamma=1
 
@@ -25,15 +25,15 @@ torch.cuda.manual_seed_all(seed)
 
 if __name__ == '__main__':
     #get training, validation and testing tensors from fb15k
-    fb15k_dataset = FB15k()
-    fb15k_train_dataset = fb15k_dataset.training.mapped_triples
-    fb15k_val_dataset = fb15k_dataset.validation.mapped_triples
-    fb15k_test_dataset = fb15k_dataset.testing.mapped_triples
+    fb15k237_dataset = FB15k237()
+    fb15k237_train_dataset = fb15k237_dataset.training.mapped_triples
+    fb15k237_val_dataset = fb15k237_dataset.validation.mapped_triples
+    fb15k237_test_dataset = fb15k237_dataset.testing.mapped_triples
 
     #print their shapes
-    print('FB15K training dataset size: ', fb15k_train_dataset.shape)
-    print('FB15K validation dataset size: ', fb15k_val_dataset.shape)
-    print('FB15K testing dataset size: ', fb15k_test_dataset.shape)
+    print('FB15K training dataset size: ', fb15k237_train_dataset.shape)
+    print('FB15K validation dataset size: ', fb15k237_val_dataset.shape)
+    print('FB15K testing dataset size: ', fb15k237_test_dataset.shape)
 
     select_train_model = input('Train a TransE model?(y/n) : ')
 
@@ -63,15 +63,15 @@ if __name__ == '__main__':
                                     weight_decay=weight_decay)
 
         #Train the model:
-        transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k_train_dataset,
-                                                      val_dataset=fb15k_val_dataset,
-                                                      batch_size=batch_size,
-                                                      num_entity=num_entity,
-                                                      model=transe_model,
-                                                      device=device,
-                                                      optimizer=optimizer,
-                                                      epoch=epoch,
-                                                      seed=seed)
+        transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k237_train_dataset,
+                                                       val_dataset=fb15k237_val_dataset,
+                                                       batch_size=batch_size,
+                                                       num_entity=num_entity,
+                                                       model=transe_model,
+                                                       device=device,
+                                                       optimizer=optimizer,
+                                                       epoch=epoch,
+                                                       seed=seed)
         #train TransE model:
         transe_model_train_eva.train_transe()
 
@@ -90,15 +90,15 @@ if __name__ == '__main__':
         transe_model = torch.load('transe_model.pt')
         print('Done!')
 
-        transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k_train_dataset,
-                                                      val_dataset=fb15k_val_dataset,
-                                                      batch_size=None,
-                                                      num_entity=num_entity,
-                                                      model=transe_model,
-                                                      device=device,
-                                                      optimizer=None,
-                                                      epoch=None,
-                                                      seed=seed)
+        transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k237_train_dataset,
+                                                       val_dataset=fb15k237_val_dataset,
+                                                       batch_size=None,
+                                                       num_entity=num_entity,
+                                                       model=transe_model,
+                                                       device=device,
+                                                       optimizer=None,
+                                                       epoch=None,
+                                                       seed=seed)
 
         # Evaluate TransE model:
         transe_model_train_eva.evaluate_model()
