@@ -38,3 +38,10 @@ class TransE(nn.Module):
         relation = triplet[:, 1]
         tail = triplet[:, 2]
         return (self.entity_emb(head) + self.relation_emb(relation) - self.entity_emb(tail)).norm(p=2, dim=1)
+
+    def predict(self, triplet):
+        score = self.cal_distance(triplet)
+        sorted_score_index = torch.argsort(score)
+        del score
+        return sorted_score_index
+

@@ -38,9 +38,7 @@ class TransE_train_evaluate():
             test_triplet[:, 1] = triplet[0][1]
             test_triplet[:, 2] = torch.arange(0, self.num_entity, dtype=torch.int64)
             test_triplet = test_triplet.to(self.device)
-            score = self.model.cal_distance(test_triplet)
-            sorted_score_index = torch.argsort(score)
-            del score
+            sorted_score_index = self.model.predict(test_triplet)
             tail_rank = (sorted_score_index == original_tail).nonzero()[0, 0]
             del sorted_score_index
             tail_rank += torch.tensor(1)
@@ -51,9 +49,7 @@ class TransE_train_evaluate():
             test_triplet[:, 1] = triplet[0][1]
             test_triplet[:, 2] = triplet[0][2]
             test_triplet = test_triplet.to(self.device)
-            score = self.model.cal_distance(test_triplet)
-            sorted_score_index = torch.argsort(score)
-            del score
+            sorted_score_index = self.model.predict(test_triplet)
             head_rank = (sorted_score_index == original_head).nonzero()[0, 0]
             del sorted_score_index
             head_rank += torch.tensor(1)
@@ -69,9 +65,9 @@ class TransE_train_evaluate():
         tail_mrr_score = torch.reciprocal(score_tensor).mean()
         tail_hit_at_10_score = torch.where(score_tensor < 11.0, 1.0, 0.0).mean()
 
-        print('Mean Rank for tail prediction is: ', tail_mr_score)
-        print('Mean Reciprocal Rank for tail prediction is: ', tail_mrr_score)
-        print('Hits@10 for tail prediction is: ', tail_hit_at_10_score)
+        print('Mean Rank for prediction is: ', tail_mr_score)
+        print('Mean Reciprocal Rank for prediction is: ', tail_mrr_score)
+        print('Hits@10 for prediction is: ', tail_hit_at_10_score)
 
 
 
