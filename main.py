@@ -31,9 +31,9 @@ if __name__ == '__main__':
     fb15k237_test_dataset = fb15k237_dataset.testing.mapped_triples
 
     #print their shapes
-    print('FB15K training dataset size: ', fb15k237_train_dataset.shape)
-    print('FB15K validation dataset size: ', fb15k237_val_dataset.shape)
-    print('FB15K testing dataset size: ', fb15k237_test_dataset.shape)
+    print('FB15K237 training dataset size: ', fb15k237_train_dataset.shape)
+    print('FB15K237 validation dataset size: ', fb15k237_val_dataset.shape)
+    print('FB15K237 testing dataset size: ', fb15k237_test_dataset.shape)
 
     select_train_model = input('Train a TransE model?(y/n) : ')
 
@@ -50,12 +50,14 @@ if __name__ == '__main__':
         elif continue_train == 'n':
 
             #Create the transe model:
+            print('Creating a new TransE model: ')
             transe_model = TransE(device=device,
                                  num_entity=num_entity,
                                  num_relation=num_relation,
                                  emb_dim=emb_dim,
                                  gamma=gamma,
                                  seed=seed)
+            print('Done!!')
 
         #Create the optimizer:
         optimizer = torch.optim.SGD(transe_model.parameters(),
