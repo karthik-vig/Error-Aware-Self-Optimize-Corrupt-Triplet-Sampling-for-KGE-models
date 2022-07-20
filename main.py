@@ -2,6 +2,7 @@ import torch
 from pykeen.datasets import FB15k237
 from models import TransE
 from train_and_evaluate import TransE_train_evaluate
+from boost import TransEBoost
 
 #set transe model paratmeters:
 device='cuda'
@@ -74,6 +75,7 @@ if __name__ == '__main__':
                                                        optimizer=optimizer,
                                                        epoch=epoch,
                                                        seed=seed)
+
         #train TransE model:
         transe_model_train_eva.train_transe()
 
@@ -91,16 +93,29 @@ if __name__ == '__main__':
         print('Loading a TransE model from disk...')
         transe_model = torch.load('transe_model.pt')
         print('Done!')
+        #
+        # transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k237_train_dataset,
+        #                                                val_dataset=fb15k237_val_dataset,
+        #                                                batch_size=None,
+        #                                                num_entity=num_entity,
+        #                                                model=transe_model,
+        #                                                device=device,
+        #                                                optimizer=None,
+        #                                                epoch=None,
+        #                                                seed=seed)
+        #
+        # # Evaluate TransE model:
+        # transe_model_train_eva.evaluate_model()
 
-        transe_model_train_eva = TransE_train_evaluate(train_dataset=fb15k237_train_dataset,
-                                                       val_dataset=fb15k237_val_dataset,
-                                                       batch_size=None,
-                                                       num_entity=num_entity,
-                                                       model=transe_model,
-                                                       device=device,
-                                                       optimizer=None,
-                                                       epoch=None,
-                                                       seed=seed)
 
-        # Evaluate TransE model:
-        transe_model_train_eva.evaluate_model()
+        #testing boost here:
+
+        test_obj = TransEBoost(train_dataset=fb15k237_train_dataset,
+                               val_dataset=fb15k237_val_dataset,
+                               batch_size=batch_size,
+                               num_entity=num_entity,
+                               model=transe_model,
+                               device=device,
+                               optimizer=None,
+                               epoch=epoch,
+                               seed=seed)
