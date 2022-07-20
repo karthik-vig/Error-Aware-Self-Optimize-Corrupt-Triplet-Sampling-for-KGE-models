@@ -22,22 +22,23 @@ class TransE_train_evaluate():
 
     def create_dataloader(self, dataset):
         tensor_dataset = TensorDataset(dataset)
-        return DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
 
     def evaluate_model(self):
         print('Starting Evaluation:')
-        score_tensor = torch.zeros(self.val_dataset_len * 2, dtype=torch.float64).to(self.device)
+        score_tensor = torch.zeros(self.val_dataset_len * 2, dtype=torch.float64).to(self.device, non_blocking=True)
         epoch = 0
         rank_count = 0
         test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64)
+        entity_tensor = torch.arange(0, self.num_entity, dtype=torch.int64)
         for triplet in self.val_dataset:
             #calculate the tail rank:
             original_tail = triplet[0][2]
             test_triplet[:, 0] = triplet[0][0]
             test_triplet[:, 1] = triplet[0][1]
-            test_triplet[:, 2] = torch.arange(0, self.num_entity, dtype=torch.int64)
-            test_triplet = test_triplet.to(self.device)
+            test_triplet[:, 2] = entity_tensor
+            test_triplet = test_triplet.to(self.device, non_blocking=True)
             sorted_score_index = self.model.predict(test_triplet)
             tail_rank = (sorted_score_index == original_tail).nonzero()[0, 0]
             del sorted_score_index
@@ -45,10 +46,10 @@ class TransE_train_evaluate():
 
             #calculate the head rank:
             original_head = triplet[0][0]
-            test_triplet[:, 0] = torch.arange(0, self.num_entity, dtype=torch.int64)
+            test_triplet[:, 0] = entity_tensor
             test_triplet[:, 1] = triplet[0][1]
             test_triplet[:, 2] = triplet[0][2]
-            test_triplet = test_triplet.to(self.device)
+            test_triplet = test_triplet.to(self.device, non_blocking=True)
             sorted_score_index = self.model.predict(test_triplet)
             head_rank = (sorted_score_index == original_head).nonzero()[0, 0]
             del sorted_score_index
@@ -74,10 +75,11 @@ class TransE_train_evaluate():
     def create_corr_triplet(self, sample_data):
         corr_triplet = sample_data.clone().detach()
         head_or_tail = torch.randint(0, 2, (1,))
+        entity_tensor = torch.randint(0, self.num_entity, (sample_data.shape[0],))
         if head_or_tail == 0:
-            corr_triplet[:, 0] = torch.randint(0, self.num_entity, (sample_data.shape[0],))
+            corr_triplet[:, 0] = entity_tensor
         else:
-            corr_triplet[:, 2] = torch.randint(0, self.num_entity, (sample_data.shape[0],))
+            corr_triplet[:, 2] = entity_tensor
         return corr_triplet
 
 
@@ -88,14 +90,12 @@ class TransE_train_evaluate():
             avg_train_loss = 0
             for index, batch_data in enumerate(self.train_data_loader):
                 sample_data = batch_data[0]
-                corr_sample_data = self.create_corr_triplet(sample_data=sample_data)
-                sample_data = sample_data.to(self.device)
-                corr_sample_data = corr_sample_data.to(self.device)
+                sample_data = sample_data.to(self.device, non_blocking=True)
+                corr_sample_data = self.create_corr_triplet(sample_data=sample_data).to(self.device, non_blocking=True)
                 loss = self.model(sample_data, corr_sample_data)
                 avg_train_loss += loss.sum()
-                loss = loss.mean()
                 self.optimizer.zero_grad()
-                loss.backward()
+                loss.mean().backward()
                 self.optimizer.step()
             print(i, 'epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_dataset_len)
