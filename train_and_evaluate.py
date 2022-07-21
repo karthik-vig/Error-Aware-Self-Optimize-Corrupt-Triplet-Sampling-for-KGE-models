@@ -40,7 +40,8 @@ class TransE_train_evaluate():
             test_triplet[:, 2] = entity_tensor
             test_triplet = test_triplet.to(self.device, non_blocking=True)
             sorted_score_index = self.model.predict(test_triplet)
-            tail_rank = (sorted_score_index == original_tail).nonzero()[0, 0]
+            # tail_rank = (sorted_score_index == original_tail).nonzero()[0, 0]
+            tail_rank = torch.where(sorted_score_index == original_tail)[0]
             del sorted_score_index
             tail_rank += torch.tensor(1)
 
@@ -51,7 +52,8 @@ class TransE_train_evaluate():
             test_triplet[:, 2] = triplet[0][2]
             test_triplet = test_triplet.to(self.device, non_blocking=True)
             sorted_score_index = self.model.predict(test_triplet)
-            head_rank = (sorted_score_index == original_head).nonzero()[0, 0]
+            # head_rank = (sorted_score_index == original_head).nonzero()[0, 0]
+            head_rank = torch.where(sorted_score_index == original_head)[0]
             del sorted_score_index
             head_rank += torch.tensor(1)
 
