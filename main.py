@@ -2,7 +2,8 @@ import torch
 from pykeen.datasets import FB15k237
 from models import TransE
 from train_and_evaluate import TransE_train_evaluate
-from boost import TransEBoost
+# from boost import TransEBoost
+from transe_boost import TransEBoost
 
 #set transe model paratmeters:
 device='cuda'
@@ -110,12 +111,6 @@ if __name__ == '__main__':
 
         #testing boost here:
 
-        test_obj = TransEBoost(train_dataset=fb15k237_train_dataset,
-                               val_dataset=fb15k237_val_dataset,
-                               batch_size=batch_size,
-                               num_entity=num_entity,
-                               model=transe_model,
-                               device=device,
-                               optimizer=None,
-                               epoch=epoch,
-                               seed=seed)
+        test_obj = TransEBoost()
+
+
