@@ -111,6 +111,21 @@ if __name__ == '__main__':
 
         #testing boost here:
 
-        test_obj = TransEBoost()
+        #Create the optimizer:
+        optimizer = torch.optim.SGD(transe_model.parameters(),
+                                    lr=lr,
+                                    weight_decay=weight_decay)
+
+        test_obj = TransEBoost(epoch=10,
+                               train_data=fb15k237_train_dataset,
+                               val_data=fb15k237_val_dataset,
+                               seed=2022,
+                               device=device,
+                               batch_size=36,
+                               model=transe_model,
+                               optimizer=optimizer,
+                               num_entity=num_entity)
+
+        test_obj.train()
 
 

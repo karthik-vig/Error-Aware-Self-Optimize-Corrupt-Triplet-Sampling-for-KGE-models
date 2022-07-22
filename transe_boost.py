@@ -1,8 +1,8 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
-def TransEBoost():
-    def __init__(self, epoch, train_data, val_data, seed, device, batch_size, model, num_entity):
+class TransEBoost():
+    def __init__(self, epoch, train_data, val_data, seed, device, batch_size, model, optimizer, num_entity):
         self.epoch=epoch
         self.train_data=train_data
         self.val_data=val_data
@@ -10,16 +10,18 @@ def TransEBoost():
         self.device=device
         self.batch_size=batch_size
         self.model=model
+        self.optimizer=optimizer
         self.num_entity=num_entity
+
         self.tail_dict={}
         self.head_dict={}
 
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
 
-        self.test_triplet=torch.zeros(self.num_entity, 3, dtype=torch.int64, non_blocking=True).to(self.device, non_blocking=True)
+        self.test_triplet=torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
         self.all_entities=torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
-        self.score_tensor=torch.arange(self.batch_size, dtype=torch.float64).to(self.device, non_blocking=True)
+        self.score_tensor=torch.arange(self.batch_size * 2, dtype=torch.float64).to(self.device, non_blocking=True)
 
     def tensor_to_dataloader(self, data):
         return DataLoader(TensorDataset(data),
@@ -47,19 +49,23 @@ def TransEBoost():
 
         return rank, entities_ranked_higher
 
-    def evaluate(self, data):
-        print('Starting TransE boosting: ')
+    def evaluate(self, data, print_cond):
+        #print('Starting evaluation for TransE boosting: ')
         rank_count=0
         for index, triplet in enumerate(data):
             #for tail:
             tail_rank, tail_entities_ranked_higher = self.get_ranking_list(all_head=False, triplet=triplet)
+            tail_rank+=1
             self.score_tensor[rank_count]=tail_rank
-            self.tail_dict[index] = self.tail_dict.get(index, set()).union( set(tail_entities_ranked_higher.tolist()) )
+            if tail_rank > 10:
+                self.tail_dict[index] = self.tail_dict.get(index, set()).union( set(tail_entities_ranked_higher.tolist()) )
 
             #for head:
             head_rank, head_entities_ranked_higher = self.get_ranking_list(all_head=True, triplet=triplet)
+            head_rank+=1
             self.score_tensor[rank_count + 1]=head_rank
-            self.head_dict[index] = self.head_dict.get(index, set()).union( set(head_entities_ranked_higher.tolist()) )
+            if head_rank > 10:
+                self.head_dict[index] = self.head_dict.get(index, set()).union( set(head_entities_ranked_higher.tolist()) )
 
             rank_count+=2
 
@@ -67,12 +73,14 @@ def TransEBoost():
         mrr=torch.reciprocal(self.score_tensor).mean()
         hits_at_10=torch.where(self.score_tensor < 11.0, 1.0, 0.0).mean()
 
-        print('MR: ', mr)
-        print('MRR: ', mrr)
-        print('Hits@10: ', hits_at_10)
+        if print_cond:
+            print('MR: ', mr)
+            print('MRR: ', mrr)
+            print('Hits@10: ', hits_at_10)
 
 
     def sample_corr_batch(self, sample_batch):
+        sample_batch = sample_batch.clone().detach()
         offset=0
         if self.batch_size % 2 != 0:
             offset=1
@@ -98,11 +106,14 @@ def TransEBoost():
                     temp = torch.randint(0, 10, (1,))
                     if temp <= 7:
                         dict_len = len(self.head_dict[index])
+                        # print(dict_len) # remove later
                         sample_batch[index, 2] = list(self.head_dict[index])[torch.randint(0, dict_len, (1,))]
                     else:
                         sample_batch[index, 2] = torch.randint(0, self.num_entity, (1,))
                 else:
                     sample_batch[index, 2] = torch.randint(0, self.num_entity, (1,))
+
+        return sample_batch
 
     def train(self):
         print('Starting TransE boosting Training: ')
@@ -110,7 +121,7 @@ def TransEBoost():
         for i in range(1, self.epoch + 1):
             for sample_batch in self.tensor_to_dataloader(self.train_data):
                 sample_batch = sample_batch[0].to(self.device, non_blocking=True)
-                self.evaluate(sample_batch=sample_batch)
+                self.evaluate(data=sample_batch, print_cond=False)
                 corr_sample_batch = self.sample_corr_batch(sample_batch=sample_batch).to(self.device, non_blocking=True)
                 loss = self.model(sample_batch, corr_sample_batch)
                 avg_train_loss+=loss.sum()
