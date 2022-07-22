@@ -91,7 +91,7 @@ class TransEBoost():
             for index, triplet in enumerate(sample_batch):
                 if index in tail_dict_keys:
                     temp = torch.randint(0, 10, (1,))
-                    if temp <= 7:
+                    if temp <= 5:
                         dict_len=len(self.tail_dict[index])
                         sample_batch[index, 2]=list(self.tail_dict[index])[ torch.randint(0, dict_len, (1,)) ]
                     else:
@@ -104,14 +104,14 @@ class TransEBoost():
             for index, triplet in enumerate(sample_batch):
                 if index in head_dict_keys:
                     temp = torch.randint(0, 10, (1,))
-                    if temp <= 7:
+                    if temp <= 5:
                         dict_len = len(self.head_dict[index])
                         # print(dict_len) # remove later
-                        sample_batch[index, 2] = list(self.head_dict[index])[torch.randint(0, dict_len, (1,))]
+                        sample_batch[index, 0] = list(self.head_dict[index])[torch.randint(0, dict_len, (1,))]
                     else:
-                        sample_batch[index, 2] = torch.randint(0, self.num_entity, (1,))
+                        sample_batch[index, 0] = torch.randint(0, self.num_entity, (1,))
                 else:
-                    sample_batch[index, 2] = torch.randint(0, self.num_entity, (1,))
+                    sample_batch[index, 0] = torch.randint(0, self.num_entity, (1,))
 
         return sample_batch
 
