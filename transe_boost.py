@@ -58,14 +58,16 @@ class TransEBoost():
             tail_rank+=1
             self.score_tensor[rank_count]=tail_rank
             if tail_rank > 10:
-                self.tail_dict[index] = self.tail_dict.get(index, set()).union( set(tail_entities_ranked_higher.tolist()) )
+                self.tail_dict[index] = torch.cat(( self.tail_dict.get(index, torch.tensor([], dtype=torch.int64) ),
+                                                    tail_entities_ranked_higher)).unique()
 
             #for head:
             head_rank, head_entities_ranked_higher = self.get_ranking_list(all_head=True, triplet=triplet)
             head_rank+=1
             self.score_tensor[rank_count + 1]=head_rank
             if head_rank > 10:
-                self.head_dict[index] = self.head_dict.get(index, set()).union( set(head_entities_ranked_higher.tolist()) )
+                self.head_dict[index] = torch.cat(( self.head_dict.get(index, torch.tensor([], dtype=torch.int64)),
+                                                    head_entities_ranked_higher)).unique()
 
             rank_count+=2
 
