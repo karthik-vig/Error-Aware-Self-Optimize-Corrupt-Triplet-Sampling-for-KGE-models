@@ -122,9 +122,9 @@ class TransEBoost():
 
     def train(self):
         print('Starting TransE boosting Training: ')
-        avg_train_loss=0
         for epoch in range(self.start_epoch, self.end_epoch + 1):
             print('Starting epoch: ', epoch)
+            avg_train_loss=0
             for sample_batch in self.tensor_to_dataloader(self.train_data):
                 sample_batch = sample_batch[0].to(self.device, non_blocking=True)
                 self.evaluate(data=sample_batch, print_cond=False)
