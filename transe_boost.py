@@ -2,8 +2,9 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 class TransEBoost():
-    def __init__(self, epoch, train_data, val_data, seed, device, batch_size, model, optimizer, num_entity):
-        self.epoch=epoch
+    def __init__(self, start_epoch, end_epoch, train_data, val_data, seed, device, batch_size, model, optimizer, num_entity):
+        self.start_epoch=start_epoch
+        self.end_epoch=end_epoch
         self.train_data=train_data
         self.val_data=val_data
         self.seed=seed
@@ -122,7 +123,7 @@ class TransEBoost():
     def train(self):
         print('Starting TransE boosting Training: ')
         avg_train_loss=0
-        for i in range(1, self.epoch + 1):
+        for epoch in range(self.start_epoch, self.end_epoch + 1):
             for sample_batch in self.tensor_to_dataloader(self.train_data):
                 sample_batch = sample_batch[0].to(self.device, non_blocking=True)
                 self.evaluate(data=sample_batch, print_cond=False)
@@ -133,6 +134,6 @@ class TransEBoost():
                 loss.mean().backward()
                 self.optimizer.step()
 
-            print(i, 'boost epoch is done')
+            print(epoch, 'boost epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
-            torch.save(self.model, 'transe_boost_model'+str(i)+'.pt')
+            torch.save(self.model, 'transe_boosted_models/transe_boost_model_'+str(epoch)+'.pt')
