@@ -52,13 +52,15 @@ class TransEBoost():
     def evaluate(self, data, print_cond):
         #print('Starting evaluation for TransE boosting: ')
         rank_count=0
+        self.tail_dict = {}
+        self.head_dict = {}
         for index, triplet in enumerate(data):
             #for tail:
             tail_rank, tail_entities_ranked_higher = self.get_ranking_list(all_head=False, triplet=triplet)
             tail_rank+=1
             self.score_tensor[rank_count]=tail_rank
             if tail_rank > 10:
-                self.tail_dict[index] = torch.cat(( self.tail_dict.get(index, torch.tensor([], dtype=torch.int64) ),
+                self.tail_dict[index] = torch.cat(( self.tail_dict.get(index, torch.tensor([], dtype=torch.int64,device=self.device) ),
                                                     tail_entities_ranked_higher)).unique()
 
             #for head:
@@ -66,7 +68,7 @@ class TransEBoost():
             head_rank+=1
             self.score_tensor[rank_count + 1]=head_rank
             if head_rank > 10:
-                self.head_dict[index] = torch.cat(( self.head_dict.get(index, torch.tensor([], dtype=torch.int64)),
+                self.head_dict[index] = torch.cat(( self.head_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
                                                     head_entities_ranked_higher)).unique()
 
             rank_count+=2
@@ -83,19 +85,19 @@ class TransEBoost():
 
     def sample_corr_batch(self, sample_batch):
         sample_batch = sample_batch.clone().detach()
-        offset=0
-        if self.batch_size % 2 != 0:
-            offset=1
+        # offset=0
+        # if self.batch_size % 2 != 0:
+        #     offset=1
         head_or_tail=torch.randint(0, 2, (1,))
 
         if head_or_tail == 0: #replace tail
             tail_dict_keys=self.tail_dict.keys()
             for index, triplet in enumerate(sample_batch):
                 if index in tail_dict_keys:
-                    temp = torch.randint(0, 10, (1,))
-                    if temp <= 5:
-                        dict_len=len(self.tail_dict[index])
-                        sample_batch[index, 2]=list(self.tail_dict[index])[ torch.randint(0, dict_len, (1,)) ]
+                    temp = torch.randint(1, 11, (1,))
+                    if temp <= 7:
+                        dict_len=self.tail_dict[index].shape[0]
+                        sample_batch[index, 2]=self.tail_dict[index][torch.randint(0, dict_len, (1,))]
                     else:
                         sample_batch[index, 2]=torch.randint(0, self.num_entity, (1,))
                 else:
@@ -105,11 +107,11 @@ class TransEBoost():
             head_dict_keys = self.head_dict.keys()
             for index, triplet in enumerate(sample_batch):
                 if index in head_dict_keys:
-                    temp = torch.randint(0, 10, (1,))
-                    if temp <= 5:
-                        dict_len = len(self.head_dict[index])
+                    temp = torch.randint(1, 11, (1,))
+                    if temp <= 7:
+                        dict_len = self.head_dict[index].shape[0]
                         # print(dict_len) # remove later
-                        sample_batch[index, 0] = list(self.head_dict[index])[torch.randint(0, dict_len, (1,))]
+                        sample_batch[index, 0] = self.head_dict[index][torch.randint(0, dict_len, (1,))]
                     else:
                         sample_batch[index, 0] = torch.randint(0, self.num_entity, (1,))
                 else:
@@ -131,5 +133,6 @@ class TransEBoost():
                 loss.mean().backward()
                 self.optimizer.step()
 
-            print(i, 'epoch is done')
+            print(i, 'boost epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
+            torch.save(self.model, 'transe_boost_model'+str(i)+'.pt')
