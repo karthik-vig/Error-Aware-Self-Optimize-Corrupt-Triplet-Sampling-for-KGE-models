@@ -28,7 +28,7 @@ torch.cuda.manual_seed_all(seed)
 
 #save and load transe_models:
 # evaluate_model='transe_model.pt'
-evaluate_model='transe_boosted_models/transe_boost_model_1.pt'
+evaluate_model='transe_boosted_models/transe_boost_model_5.pt'
 
 def restore_model():
     file_list=listdir('transe_boosted_models/')
@@ -138,7 +138,7 @@ if __name__ == '__main__':
                                     weight_decay=weight_decay)
 
         test_obj = TransEBoost(start_epoch=start_epoch,
-                               end_epoch=10,
+                               end_epoch=50,
                                train_data=fb15k237_train_dataset,
                                val_data=fb15k237_val_dataset,
                                seed=2022,
