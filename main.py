@@ -5,6 +5,7 @@ from train_and_evaluate import TransE_train_evaluate
 # from boost import TransEBoost
 from transe_boost import TransEBoost
 from os import listdir
+import sys
 
 #set transe model paratmeters:
 device='cuda'
@@ -28,7 +29,11 @@ torch.cuda.manual_seed_all(seed)
 
 #save and load transe_models:
 # evaluate_model='transe_model.pt'
-evaluate_model='transe_boosted_models/transe_boost_model_5.pt'
+evaluate_model='transe_boosted_models/transe_boost_model_44.pt'
+
+#TransEBoost parameters:
+start_epoch=1
+end_epoch=100
 
 def restore_model():
     file_list=listdir('transe_boosted_models/')
@@ -38,7 +43,8 @@ def restore_model():
     start_epoch=model_num+1
     return transe_model, start_epoch
 
-if __name__ == '__main__':
+
+def main():
     #get training, validation and testing tensors from fb15k
     fb15k237_dataset = FB15k237()
     fb15k237_train_dataset = fb15k237_dataset.training.mapped_triples
@@ -130,7 +136,24 @@ if __name__ == '__main__':
 
         #testing boost here:
 
-        transe_model, start_epoch=restore_model()
+        if len( listdir('transe_boosted_models/') ) > 0:
+            print('Restoring...')
+            transe_model, start_epoch=restore_model()
+            print('Done!')
+
+            if start_epoch >= end_epoch:
+                print('Already trained till end epoch condition')
+                sys.exit(0)
+        else:
+            print('Creating a new TransE model: ')
+            transe_model = TransE(device=device,
+                                 num_entity=num_entity,
+                                 num_relation=num_relation,
+                                 emb_dim=emb_dim,
+                                 gamma=gamma,
+                                 seed=seed)
+            print('Done!!')
+
 
         #Create the optimizer:
         optimizer = torch.optim.SGD(transe_model.parameters(),
@@ -138,12 +161,12 @@ if __name__ == '__main__':
                                     weight_decay=weight_decay)
 
         test_obj = TransEBoost(start_epoch=start_epoch,
-                               end_epoch=50,
+                               end_epoch=end_epoch,
                                train_data=fb15k237_train_dataset,
                                val_data=fb15k237_val_dataset,
-                               seed=2022,
+                               seed=seed,
                                device=device,
-                               batch_size=36,
+                               batch_size=batch_size,
                                model=transe_model,
                                optimizer=optimizer,
                                num_entity=num_entity)
@@ -151,3 +174,5 @@ if __name__ == '__main__':
         test_obj.train()
 
 
+if __name__ == '__main__':
+    main()
