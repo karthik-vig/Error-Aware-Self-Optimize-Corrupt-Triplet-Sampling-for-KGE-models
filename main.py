@@ -6,11 +6,10 @@ from train_and_evaluate import TransE_train_evaluate
 # from boost import TransEBoost
 from transe_boost import TransEBoost
 from os import listdir
+import json
 
 #set transe model paratmeters:
 device='cuda'
-num_entity=14505
-num_relation=237
 emb_dim=50
 gamma=1
 
@@ -20,7 +19,7 @@ weight_decay=0
 
 #transe training parameters:
 batch_size=36
-epoch=100
+epoch=2
 
 #set torch seeds:
 seed=2022
@@ -32,34 +31,47 @@ end_epoch=100
 
 def main():
 
-    select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\nEnter 1,2 or 3:''')
+    select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit\nEnter 1,2,3 or 4:''')
     if select_dataset == '1':
         fb15k_dataset = FB15k()
         train_dataset = fb15k_dataset.training.mapped_triples
         val_dataset = fb15k_dataset.validation.mapped_triples
         test_dataset = fb15k_dataset.testing.mapped_triples
+        num_entity = fb15k_dataset.num_entities.real
+        num_relation = fb15k_dataset.num_relations.real
+        dataset_name = 'FB15k'
     elif select_dataset == '2':
-        #get training, validation and testing tensors from fb15k
         fb15k237_dataset = FB15k237()
         train_dataset = fb15k237_dataset.training.mapped_triples
         val_dataset = fb15k237_dataset.validation.mapped_triples
         test_dataset = fb15k237_dataset.testing.mapped_triples
+        num_entity = fb15k237_dataset.num_entities.real
+        num_relation = fb15k237_dataset.num_relations.real
+        dataset_name = 'FB15k237'
     elif select_dataset == '3':
         wn18_dataset = WN18()
         train_dataset = wn18_dataset.training.mapped_triples
         val_dataset = wn18_dataset.validation.mapped_triples
         test_dataset = wn18_dataset.testing.mapped_triples
+        num_entity = wn18_dataset.num_entities.real
+        num_relation = wn18_dataset.num_relations.real
+        dataset_name = 'WN18'
+    elif select_dataset == '4':
+        return 0
 
     #print their shapes
     print('Training dataset size: ', train_dataset.shape)
     print('Validation dataset size: ', val_dataset.shape)
     print('Testing dataset size: ', test_dataset.shape)
+    print('Number of Entities: ', num_entity)
+    print('Number of relations: ', num_relation)
 
     select_train_model = input('''1) Train a new TransE model?
                                \n2) Train a existing TransE model? 
                                \n3) Evaluate a model? 
-                               \n4) Resume Training a boosted model? 
-                               \n Enter (1, 2, 3, 4): ''')
+                               \n4) Resume Training a boosted model?
+                               \n5) Exit 
+                               \n Enter (1, 2, 3, 4, 5): ''')
 
     if select_train_model == '1':
         #Create the transe model:
@@ -93,7 +105,9 @@ def main():
         save_original_transe(transe_model, 'transe_neworg_models')
 
     elif select_train_model == '2':
-        transe_model = load_original_transe()
+        transe_model = load_original_transe(num_entity=num_entity, num_relation=num_relation)
+        if transe_model == -1:
+            return -1
         #Create the optimizer:
         optimizer = torch.optim.SGD(transe_model.parameters(),
                                     lr=lr,
@@ -150,7 +164,9 @@ def main():
         transe_model_train_eva.evaluate_model()
 
     elif select_train_model == '4':
-        transe_model, start_epoch = restore_boosted_model()
+        transe_model, start_epoch = restore_boosted_model(num_entity=num_entity, num_relation=num_relation)
+        if transe_model == -1:
+            return -1
         if start_epoch >= end_epoch:
             print('Already trained till end epoch condition')
             return 0
@@ -172,8 +188,11 @@ def main():
         #train the model:
         test_obj.train()
 
+    elif select_train_model == '5':
+        return 0
 
-def restore_boosted_model():
+
+def restore_boosted_model(num_entity, num_relation):
     file_list=listdir('transe_boosted_models/')
     if len(file_list) == 0:
         print('Creating a new TransE model: ')
@@ -189,23 +208,27 @@ def restore_boosted_model():
         print('Loading last trained model...')
         file_numbers=[int(re.findall('\d+', i)[0]) for i in file_list]
         model_num=max(file_numbers)
-        transe_model=torch.load('transe_boosted_models/transe_boost_model_'+str(model_num)+'.pt')
+        try:
+            transe_model=torch.load('transe_boosted_models/transe_boost_model_'+str(model_num)+'.pt')
+        except:
+            print('Error encountered while loading model. Aborting.')
+            return -1, -1
         start_epoch=model_num+1
         print('Done!')
     return transe_model, start_epoch
 
-def save_original_transe(model, prefix):
-    file_list=listdir(prefix+'/')
+def save_original_transe(model, folder):
+    file_list=listdir(folder + '/')
     if len(file_list) == 0:
-        torch.save(model, prefix+'/transe_org_model_1.pt')
+        torch.save(model, folder + '/transe_org_model_1.pt')
     else:
         file_numbers=[int(re.findall('\d+', i)[0]) for i in file_list]
         model_num=max(file_numbers)
         model_num+=1
-        torch.save(model, prefix+'/transe_org_model_'+str(model_num)+'.pt')
+        torch.save(model, folder + '/transe_org_model_' + str(model_num) + '.pt')
     print('Saving done !!')
 
-def load_original_transe():
+def load_original_transe(num_entity, num_relation):
     file_list=listdir('transe_conorg_models/')
     if len(file_list) == 0:
         print('No existing model found')
@@ -220,7 +243,11 @@ def load_original_transe():
     else:
         file_numbers=[int(re.findall('\d+', i)[0]) for i in file_list]
         model_num=max(file_numbers)
-        transe_model=torch.load('transe_conorg_models/transe_org_model_'+str(model_num)+'.pt')
+        try:
+            transe_model=torch.load('transe_conorg_models/transe_org_model_'+str(model_num)+'.pt')
+        except:
+            print('Error encountered while loading model. Aborting.')
+            return -1
     return transe_model
 
 if __name__ == '__main__':
