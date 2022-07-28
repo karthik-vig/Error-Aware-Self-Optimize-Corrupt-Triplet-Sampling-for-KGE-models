@@ -100,9 +100,16 @@ def main():
         #train TransE model:
         transe_model_train_eva.train_transe()
         #Evaluate TransE model:
-        transe_model_train_eva.evaluate_model()
+        mr, mrr, hits_at_10 = transe_model_train_eva.evaluate_model()
         #save the model:
-        save_original_transe(transe_model, 'transe_neworg_models')
+        save_original_transe(model=transe_model,
+                             folder='transe_neworg_models',
+                             num_entity=num_entity,
+                             num_relation=num_relation,
+                             dataset_name=dataset_name,
+                             mr=mr,
+                             mrr=mrr,
+                             hits_at_10=hits_at_10)
 
     elif select_train_model == '2':
         transe_model = load_original_transe(num_entity=num_entity, num_relation=num_relation)
@@ -126,9 +133,16 @@ def main():
         #train TransE model:
         transe_model_train_eva.train_transe()
         #Evaluate TransE model:
-        transe_model_train_eva.evaluate_model()
+        mr, mrr, hist_at_10 = transe_model_train_eva.evaluate_model()
         #save model
-        save_original_transe(transe_model, 'transe_conorg_models')
+        save_original_transe(model=transe_model,
+                             folder='transe_conorg_models',
+                             num_entity=num_entity,
+                             num_relation=num_relation,
+                             dataset_name=dataset_name,
+                             mr=mr,
+                             mrr=mrr,
+                             hits_at_10=hits_at_10)
 
     elif select_train_model == '3':
         select_eva_model = input('''Select model to be evaluated:\n
@@ -161,7 +175,13 @@ def main():
                                                        epoch=None,
                                                        seed=seed)
         # Evaluate TransE model:
-        transe_model_train_eva.evaluate_model()
+        mr, mrr, hits_at_10 = transe_model_train_eva.evaluate_model()
+        #save evaluation results:
+        save_evaluation_res(mr=mr,
+                            mrr=mrr,
+                            hits_at_10=hits_at_10,
+                            dataset_name=dataset_name,
+                            evaluate_model=evaluate_model)
 
     elif select_train_model == '4':
         transe_model, start_epoch = restore_boosted_model(num_entity=num_entity, num_relation=num_relation)
@@ -217,15 +237,34 @@ def restore_boosted_model(num_entity, num_relation):
         print('Done!')
     return transe_model, start_epoch
 
-def save_original_transe(model, folder):
+def save_original_transe(model, folder, num_entity, num_relation, dataset_name, mr, mrr, hits_at_10):
     file_list=listdir(folder + '/')
+    meta_data = {'Device':device,
+                 'Seed':seed,
+                 'Dataset Name':dataset_name,
+                 'Number of Entities':num_entity,
+                 'Number of Relations':num_relation,
+                 'Embedding Dimension':emb_dim,
+                 'Gamma':gamma,
+                 'Learning Rate':lr,
+                 'L2':weight_decay,
+                 'Model Number':0,
+                 'Epochs':epoch,
+                 'Batch Size':batch_size,
+                 'MR':mr,
+                 'MRR':mrr,
+                 'Hits@10':hits_at_10}
     if len(file_list) == 0:
-        torch.save(model, folder + '/transe_org_model_1.pt')
+        meta_data['Model Number'] = 1
     else:
         file_numbers=[int(re.findall('\d+', i)[0]) for i in file_list]
         model_num=max(file_numbers)
         model_num+=1
-        torch.save(model, folder + '/transe_org_model_' + str(model_num) + '.pt')
+        meta_data['Model Number'] = model_num
+    torch.save(model, folder + '/transe_org_model_' + str(meta_data['Model Number']) + '.pt')
+    with open(folder + '/meta_data_'+str(meta_data['Model Number'])+'.json', 'w') as json_file:
+        json.dump(meta_data, json_file, indent=4)
+        json_file.close()
     print('Saving done !!')
 
 def load_original_transe(num_entity, num_relation):
@@ -249,6 +288,36 @@ def load_original_transe(num_entity, num_relation):
             print('Error encountered while loading model. Aborting.')
             return -1
     return transe_model
+
+def save_evaluation_res(mr, mrr, hits_at_10, dataset_name, evaluate_model):
+    meta_data = {'Device':device,
+                 'Seed':seed,
+                 'Dataset Name':dataset_name,
+                 'Model Name':evaluate_model,
+                 'MR':mr,
+                 'MRR':mrr,
+                 'Hits@10':hits_at_10}
+    with open('evaluation_results/meta_data_'+meta_data['Model Name'][:-3]+'.json', 'w') as json_file:
+        json.dump(meta_data, json_file, indent=4)
+        json_file.close()
+    print('Saving done !!')
+
+def save_boosted_meta(dataset_name, num_entity, num_relation, start_epoch):
+    meta_data = {'Device': device,
+                 'Seed': seed,
+                 'Dataset Name': dataset_name,
+                 'Number of Entities': num_entity,
+                 'Number of Relations': num_relation,
+                 'Embedding Dimension': emb_dim,
+                 'Gamma': gamma,
+                 'Learning Rate': lr,
+                 'L2': weight_decay,
+                 'Start Epoch': start_epoch,
+                 'Batch Size': batch_size}
+    with open('transe_boosted_models/meta_data'+str(meta_data['Start Epoch'])+'.json') as json_file:
+        json.dump(meta_data, json_file, indent=4)
+        json_file.close()
+    print('Saving Done!!')
 
 if __name__ == '__main__':
     main()

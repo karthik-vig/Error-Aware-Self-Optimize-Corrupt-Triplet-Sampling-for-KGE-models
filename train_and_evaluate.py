@@ -64,13 +64,15 @@ class TransE_train_evaluate():
             epoch += 1
             if epoch % 5000 == 0:
                 print('Triplets evaluated: ', epoch)
-        tail_mr_score = torch.mean(score_tensor)
-        tail_mrr_score = torch.reciprocal(score_tensor).mean()
-        tail_hit_at_10_score = torch.where(score_tensor < 11.0, 1.0, 0.0).mean()
+        mr_score = torch.mean(score_tensor)
+        mrr_score = torch.reciprocal(score_tensor).mean()
+        hit_at_10_score = torch.where(score_tensor < 11.0, 1.0, 0.0).mean()
 
-        print('Mean Rank for prediction is: ', tail_mr_score)
-        print('Mean Reciprocal Rank for prediction is: ', tail_mrr_score)
-        print('Hits@10 for prediction is: ', tail_hit_at_10_score)
+        print('Mean Rank for prediction is: ', mr_score)
+        print('Mean Reciprocal Rank for prediction is: ', mrr_score)
+        print('Hits@10 for prediction is: ', hit_at_10_score)
+
+        return mr_score, mrr_score, hit_at_10_score
 
 
 
