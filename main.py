@@ -133,7 +133,7 @@ def main():
         #train TransE model:
         transe_model_train_eva.train_transe()
         #Evaluate TransE model:
-        mr, mrr, hist_at_10 = transe_model_train_eva.evaluate_model()
+        mr, mrr, hits_at_10 = transe_model_train_eva.evaluate_model()
         #save model
         save_original_transe(model=transe_model,
                              folder='transe_conorg_models',
@@ -205,6 +205,11 @@ def main():
                                model=transe_model,
                                optimizer=optimizer,
                                num_entity=num_entity)
+        #save the meta data:
+        save_boosted_meta(dataset_name=dataset_name,
+                          num_entity=num_entity,
+                          num_relation=num_relation,
+                          start_epoch=start_epoch)
         #train the model:
         test_obj.train()
 
@@ -251,9 +256,9 @@ def save_original_transe(model, folder, num_entity, num_relation, dataset_name, 
                  'Model Number':0,
                  'Epochs':epoch,
                  'Batch Size':batch_size,
-                 'MR':mr,
-                 'MRR':mrr,
-                 'Hits@10':hits_at_10}
+                 'MR':float(mr),
+                 'MRR':float(mrr),
+                 'Hits@10':float(hits_at_10)}
     if len(file_list) == 0:
         meta_data['Model Number'] = 1
     else:
@@ -293,10 +298,10 @@ def save_evaluation_res(mr, mrr, hits_at_10, dataset_name, evaluate_model):
     meta_data = {'Device':device,
                  'Seed':seed,
                  'Dataset Name':dataset_name,
-                 'Model Name':evaluate_model,
-                 'MR':mr,
-                 'MRR':mrr,
-                 'Hits@10':hits_at_10}
+                 'Model Name':evaluate_model.replace('/','-'),
+                 'MR':float(mr),
+                 'MRR':float(mrr),
+                 'Hits@10':float(hits_at_10)}
     with open('evaluation_results/meta_data_'+meta_data['Model Name'][:-3]+'.json', 'w') as json_file:
         json.dump(meta_data, json_file, indent=4)
         json_file.close()
@@ -314,7 +319,7 @@ def save_boosted_meta(dataset_name, num_entity, num_relation, start_epoch):
                  'L2': weight_decay,
                  'Start Epoch': start_epoch,
                  'Batch Size': batch_size}
-    with open('transe_boosted_models/meta_data'+str(meta_data['Start Epoch'])+'.json') as json_file:
+    with open('transe_boosted_models/meta_data'+str(meta_data['Start Epoch'])+'.json', 'w') as json_file:
         json.dump(meta_data, json_file, indent=4)
         json_file.close()
     print('Saving Done!!')
