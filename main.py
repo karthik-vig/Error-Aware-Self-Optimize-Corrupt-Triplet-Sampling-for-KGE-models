@@ -1,14 +1,11 @@
 import re
 import torch
-from pykeen.datasets import FB15k237
-from pykeen.datasets import FB15k
-from pykeen.datasets import WN18
+from pykeen.datasets import FB15k237, FB15k, WN18
 from models import TransE
 from train_and_evaluate import TransE_train_evaluate
 # from boost import TransEBoost
 from transe_boost import TransEBoost
 from os import listdir
-
 
 #set transe model paratmeters:
 device='cuda'
@@ -30,41 +27,33 @@ seed=2022
 torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 
-#save and load transe_models:
-# evaluate_model='transe_model.pt'
-evaluate_model='transe_boosted_models/transe_boost_model_71.pt'
-
 #TransEBoost parameters:
-# start_epoch=1
 end_epoch=100
-
 
 def main():
 
     select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\nEnter 1,2 or 3:''')
-
-    if select_dataset == 1:
+    if select_dataset == '1':
         fb15k_dataset = FB15k()
         train_dataset = fb15k_dataset.training.mapped_triples
         val_dataset = fb15k_dataset.validation.mapped_triples
         test_dataset = fb15k_dataset.testing.mapped_triples
-    elif select_dataset == 2:
+    elif select_dataset == '2':
         #get training, validation and testing tensors from fb15k
         fb15k237_dataset = FB15k237()
         train_dataset = fb15k237_dataset.training.mapped_triples
         val_dataset = fb15k237_dataset.validation.mapped_triples
         test_dataset = fb15k237_dataset.testing.mapped_triples
-    elif select_dataset == 3:
+    elif select_dataset == '3':
         wn18_dataset = WN18()
         train_dataset = wn18_dataset.training.mapped_triples
         val_dataset = wn18_dataset.validation.mapped_triples
         test_dataset = wn18_dataset.testing.mapped_triples
 
-
     #print their shapes
-    print('FB15K237 training dataset size: ', train_dataset.shape)
-    print('FB15K237 validation dataset size: ', val_dataset.shape)
-    print('FB15K237 testing dataset size: ', test_dataset.shape)
+    print('Training dataset size: ', train_dataset.shape)
+    print('Validation dataset size: ', val_dataset.shape)
+    print('Testing dataset size: ', test_dataset.shape)
 
     select_train_model = input('''1) Train a new TransE model?
                                \n2) Train a existing TransE model? 
@@ -134,17 +123,20 @@ def main():
                                   3) boosted model\n
                                   Enter (1,2,3):''')
         select_eva_model_num = input('''Enter the model number: ''')
-        if select_eva_model == 1:
+        if select_eva_model == '1':
             evaluate_model = 'transe_neworg_models/transe_org_model_'
-        elif select_eva_model == 2:
+        elif select_eva_model == '2':
             evaluate_model = 'transe_conorg_models/transe_org_model_'
-        elif select_eva_model == 3:
+        elif select_eva_model == '3':
             evaluate_model = 'transe_boosted_models/transe_boost_model_'
         evaluate_model+=str(select_eva_model_num)+'.pt'
         print('Loading a TransE model from disk...')
-        transe_model = torch.load(evaluate_model)
-        print('Done!')
-        print('Model being evaluated: ', evaluate_model)
+        try:
+            transe_model = torch.load(evaluate_model)
+        except:
+            print('Error in loading model. Aborting.')
+            return -1
+        print('Done!\nModel being evaluated: ', evaluate_model)
         transe_model_train_eva = TransE_train_evaluate(train_dataset=train_dataset,
                                                        val_dataset=val_dataset,
                                                        batch_size=None,
