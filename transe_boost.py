@@ -1,5 +1,8 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader
+import pandas as pd
+import lightgbm
+from os import listdir
 
 class TransEBoost():
     def __init__(self, start_epoch, end_epoch, train_data, val_data, seed, device, batch_size, model, optimizer, num_entity):
@@ -138,3 +141,69 @@ class TransEBoost():
             print(epoch, 'boost epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
             torch.save(self.model, 'transe_boosted_models/transe_boost_model_'+str(epoch)+'.pt')
+
+
+
+class LTR():
+    def __init__(self, train_data, val_data, models_path):
+        self.train_data = train_data
+        self.val_data = val_data
+        self.models = self.load_models(path=models_path)
+        self.ltr_model = lightgbm.LGBMRanker(
+            objective='lambdarank',
+            metric='ndcg'
+        )
+
+    def load_models(self, path):
+        model_names = listdir(path)
+        models = []
+        for model_name in model_names:
+            models.append(torch.load(path + model_name))
+        return models
+
+    def proces_data(self, data):
+        if data == None:
+            return
+        data_df = pd.DataFrame()
+        x_df = pd.DataFrame()
+        y_df = pd.DataFrame()
+
+        triplets = torch.zeros_like(data)
+        data_df['head'] = data[:,0]
+        data_df['relation'] = data[:,1]
+        data_df['tail'] = data[:,2]
+
+        data_df = data_df.sort_values(by=['head', 'relation'])
+        x_df['qid'] = data_df.groupby(by=['head', 'relation']).ngroup()
+        triplets[:, 0] = torch.tensor(data_df['head'])
+        triplets[:, 1] = torch.tensor(data_df['relation'])
+        triplets[:, 2] = torch.tensor(data_df['tail'])
+        features = self.get_features(triplets=triplets)
+        for i in range(len(features)):
+            x_df['f'+str(i)] = features[i]
+        y_df['rel'] = torch.ones(len(data))
+        qid_group = torch.tensor(x_df[['qid','rel']].groupby(by=['qid']).count()['rel'])
+
+        return x_df, y_df, qid_group
+
+    def get_features(self, triplets):
+        features = torch.zeros(len(self.models), triplets.shape[0])
+        for index, model in enumerate(self.models):
+            features[index] = model.cal_distance(triplets)
+        return features
+
+    def ltr_train(self):
+        x_train, y_train, train_qid_group = self.proces_data(self.train_data)
+        x_val, y_val, val_qid_group = self.proces_data(self.val_data)
+        self.ltr_model.fit(
+            X=x_train,
+            y=y_train,
+            group=train_qid_group,
+            eval_set=[(x_val, y_val)],
+            eval_group=[val_qid_group],
+            eval_at=10,
+            verbose=10
+        )
+
+    def ltr_rank(self):
+        pass
