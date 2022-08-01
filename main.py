@@ -4,7 +4,7 @@ from pykeen.datasets import FB15k237, FB15k, WN18
 from models import TransE
 from train_and_evaluate import TransE_train_evaluate
 # from boost import TransEBoost
-from transe_boost import TransEBoost
+from transe_boost import TransEBoost, TransEBoost2
 from os import listdir
 import json
 
@@ -70,8 +70,9 @@ def main():
                                \n2) Train a existing TransE model? 
                                \n3) Evaluate a model? 
                                \n4) Resume Training a boosted model?
-                               \n5) Exit 
-                               \n Enter (1, 2, 3, 4, 5): ''')
+                               \n5) Transe Boost 2 model training?
+                               \n6) Exit 
+                               \n Enter (1, 2, 3, 4, 5, 6): ''')
 
     if select_train_model == '1':
         #Create the transe model:
@@ -195,7 +196,7 @@ def main():
                                     lr=lr,
                                     weight_decay=weight_decay)
         # setup to train the model:
-        test_obj = TransEBoost(start_epoch=start_epoch,
+        boost_obj = TransEBoost(start_epoch=start_epoch,
                                end_epoch=end_epoch,
                                train_data=train_dataset,
                                val_data=val_dataset,
@@ -211,9 +212,35 @@ def main():
                           num_relation=num_relation,
                           start_epoch=start_epoch)
         #train the model:
-        test_obj.train()
+        boost_obj.train()
 
     elif select_train_model == '5':
+        transe_model = torch.load('transe_conorg_models/transe_org_model_1.pt')
+        # Create the optimizer:
+        optimizer = torch.optim.SGD(transe_model.parameters(),
+                                    lr=lr,
+                                    weight_decay=weight_decay)
+        #setup the transe boost 2
+        boost2_obj = TransEBoost2(pre_model=transe_model,
+                                  cur_model=transe_model,
+                                  train_data=train_dataset,
+                                  start_epoch=1,
+                                  end_epoch=10,
+                                  seed=seed,
+                                  device=device,
+                                  batch_size=batch_size,
+                                  start_model=1,
+                                  end_model=5,
+                                  optimizer=optimizer,
+                                  num_entity=num_entity)
+        #get initial err index:
+        err_index = boost2_obj.get_err_index(data=train_dataset,
+                                             model=transe_model)
+        #set error index:
+        boost2_obj.set_err_index(err_index=err_index)
+        #train:
+        boost2_obj.train()
+    elif select_train_model == '6':
         return 0
 
 
