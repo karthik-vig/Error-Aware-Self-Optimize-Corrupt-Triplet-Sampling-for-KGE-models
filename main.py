@@ -19,7 +19,7 @@ weight_decay=0
 
 #transe training parameters:
 batch_size=36
-epoch=2
+epoch=50
 
 #set torch seeds:
 seed=2022
@@ -150,6 +150,7 @@ def main():
                                   1) original model\n
                                   2) continue training original model\n
                                   3) boosted model\n
+                                  4 boosted 2 model\n
                                   Enter (1,2,3):''')
         select_eva_model_num = input('''Enter the model number: ''')
         if select_eva_model == '1':
@@ -158,6 +159,8 @@ def main():
             evaluate_model = 'transe_conorg_models/transe_org_model_'
         elif select_eva_model == '3':
             evaluate_model = 'transe_boosted_models/transe_boost_model_'
+        elif select_eva_model == '4':
+            evaluate_model = 'transe_boosted2_models/transe_boost2_model_'
         evaluate_model+=str(select_eva_model_num)+'.pt'
         print('Loading a TransE model from disk...')
         try:
