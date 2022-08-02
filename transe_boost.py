@@ -158,17 +158,13 @@ class TransEBoost2():
         self.num_entity = num_entity
         self.tail_dict = {}
         self.head_dict = {}
-        self.err_index = None
 
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
 
         self.test_triplet=torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
         self.all_entities=torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
-        # self.score_tensor=torch.arange(self.batch_size * 2, dtype=torch.float64).to(self.device, non_blocking=True)
-
-    def set_err_index(self, err_index):
-        self.err_index = err_index
+        self.err_index = self.get_err_index(data=self.train_data, model=self.pre_model)
 
     def tensor_to_dataloader(self, data):
         return DataLoader(TensorDataset(data),
@@ -199,32 +195,20 @@ class TransEBoost2():
             return rank
 
     def evaluate(self, data, model, print_cond=False):
-        #print('Starting evaluation for TransE boosting: ')
-        # rank_count=0
         self.tail_dict = {}
         self.head_dict = {}
         for index, triplet in enumerate(data):
             #for tail:
             tail_rank, tail_entities_ranked_higher = self.get_ranking_list(all_head=False, model=model, triplet=triplet)
-            # self.score_tensor[rank_count]=tail_rank
             if tail_rank > 10:
                 self.tail_dict[index] = torch.cat(( self.tail_dict.get(index, torch.tensor([], dtype=torch.int64,device=self.device) ),
                                                     tail_entities_ranked_higher)).unique()
 
             #for head:
             head_rank, head_entities_ranked_higher = self.get_ranking_list(all_head=True, model=model, triplet=triplet)
-            # self.score_tensor[rank_count + 1]=head_rank
             if head_rank > 10:
                 self.head_dict[index] = torch.cat(( self.head_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
                                                     head_entities_ranked_higher)).unique()
-            # rank_count+=2
-        # mr=torch.mean(self.score_tensor)
-        # mrr=torch.reciprocal(self.score_tensor).mean()
-        # hits_at_10=torch.where(self.score_tensor < 11.0, 1.0, 0.0).mean()
-        # if print_cond:
-        #     print('MR: ', mr)
-        #     print('MRR: ', mrr)
-        #     print('Hits@10: ', hits_at_10)
 
     def get_err_index(self, data, model):
         err_index = []
@@ -266,14 +250,7 @@ class TransEBoost2():
 
     def train(self):
         print('Starting TransEBoost2 training:')
-        # err_index = torch.arange(0, self.train_data.shape[0], dtype=torch.int64).to(self.device,
-        #                                                                             non_blocking=True)
-        if self.err_index == None:
-            print('err_index not set. Aborting.')
-            return
-        else:
-            err_index = self.err_index
-
+        err_index = self.err_index
         for model in range(self.start_model, self.end_model):
             for epoch in range(self.start_epoch, self.end_epoch + 1):
                 print('Starting epoch: ', epoch)

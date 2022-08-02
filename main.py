@@ -236,13 +236,9 @@ def main():
                                   end_model=5,
                                   optimizer=optimizer,
                                   num_entity=num_entity)
-        #get initial err index:
-        err_index = boost2_obj.get_err_index(data=train_dataset,
-                                             model=transe_model)
-        #set error index:
-        boost2_obj.set_err_index(err_index=err_index)
         #train:
         boost2_obj.train()
+
     elif select_train_model == '6':
         return 0
 
