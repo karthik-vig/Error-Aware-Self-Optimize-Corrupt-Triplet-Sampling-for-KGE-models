@@ -87,7 +87,7 @@ class Evaluation():
             head_rank = self.get_ranking_list(all_head=True, triplet=triplet.to(device=self.device, non_blocking=True))
             head_score_tensor[index] = head_rank
             # to show progress
-            if index % 10000:
+            if index % 10000 == 0:
                 print('Triplets evaluated: ', index)
         # concat the two tesors, to produce a final listing of ranks
         score_tensor = torch.cat((tail_score_tensor, head_score_tensor))

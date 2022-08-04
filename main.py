@@ -2,8 +2,7 @@ import re
 import torch
 from pykeen.datasets import FB15k237, FB15k, WN18
 from models import TransE
-from train_and_evaluate import TransE_train_evaluate
-# from boost import TransEBoost
+from train_and_evaluate import TransETrain, Evaluation
 from transe_boost import TransEBoost, TransEBoost2
 from os import listdir
 import json
@@ -65,6 +64,7 @@ def main():
     print('Testing dataset size: ', test_dataset.shape)
     print('Number of Entities: ', num_entity)
     print('Number of relations: ', num_relation)
+    print('Dataset Name: ', dataset_name)
 
     select_train_model = input('''1) Train a new TransE model?
                                \n2) Train a existing TransE model? 
@@ -89,8 +89,7 @@ def main():
                                     lr=lr,
                                     weight_decay=weight_decay)
         #Train the model:
-        transe_model_train_eva = TransE_train_evaluate(train_dataset=train_dataset,
-                                                       val_dataset=val_dataset,
+        transe_model_train = TransETrain(train_dataset=train_dataset,
                                                        batch_size=batch_size,
                                                        num_entity=num_entity,
                                                        model=transe_model,
@@ -99,18 +98,16 @@ def main():
                                                        epoch=epoch,
                                                        seed=seed)
         #train TransE model:
-        transe_model_train_eva.train_transe()
-        #Evaluate TransE model:
-        mr, mrr, hits_at_10 = transe_model_train_eva.evaluate_model()
+        transe_model_train.train_transe()
         #save the model:
         save_original_transe(model=transe_model,
                              folder='transe_neworg_models',
                              num_entity=num_entity,
                              num_relation=num_relation,
                              dataset_name=dataset_name,
-                             mr=mr,
-                             mrr=mrr,
-                             hits_at_10=hits_at_10)
+                             mr=0,
+                             mrr=0,
+                             hits_at_10=0)
 
     elif select_train_model == '2':
         transe_model = load_original_transe(num_entity=num_entity, num_relation=num_relation)
@@ -122,8 +119,7 @@ def main():
                                     weight_decay=weight_decay)
 
         #setup to train and evaluate the model:
-        transe_model_train_eva = TransE_train_evaluate(train_dataset=train_dataset,
-                                                       val_dataset=val_dataset,
+        transe_model_train = TransETrain(train_dataset=train_dataset,
                                                        batch_size=batch_size,
                                                        num_entity=num_entity,
                                                        model=transe_model,
@@ -132,25 +128,23 @@ def main():
                                                        epoch=epoch,
                                                        seed=seed)
         #train TransE model:
-        transe_model_train_eva.train_transe()
-        #Evaluate TransE model:
-        mr, mrr, hits_at_10 = transe_model_train_eva.evaluate_model()
+        transe_model_train.train_transe()
         #save model
         save_original_transe(model=transe_model,
                              folder='transe_conorg_models',
                              num_entity=num_entity,
                              num_relation=num_relation,
                              dataset_name=dataset_name,
-                             mr=mr,
-                             mrr=mrr,
-                             hits_at_10=hits_at_10)
+                             mr=0,
+                             mrr=0,
+                             hits_at_10=0)
 
     elif select_train_model == '3':
         select_eva_model = input('''Select model to be evaluated:\n
                                   1) original model\n
                                   2) continue training original model\n
                                   3) boosted model\n
-                                  4 boosted 2 model\n
+                                  4) boosted 2 model\n
                                   Enter (1,2,3):''')
         select_eva_model_num = input('''Enter the model number: ''')
         if select_eva_model == '1':
@@ -169,17 +163,13 @@ def main():
             print('Error in loading model. Aborting.')
             return -1
         print('Done!\nModel being evaluated: ', evaluate_model)
-        transe_model_train_eva = TransE_train_evaluate(train_dataset=train_dataset,
-                                                       val_dataset=val_dataset,
-                                                       batch_size=None,
-                                                       num_entity=num_entity,
-                                                       model=transe_model,
-                                                       device=device,
-                                                       optimizer=None,
-                                                       epoch=None,
-                                                       seed=seed)
+        # specify the values for evaluation:
+        eva_obj = Evaluation(data=val_dataset,
+                             model=transe_model,
+                             num_entity=num_entity,
+                             device=device)
         # Evaluate TransE model:
-        mr, mrr, hits_at_10 = transe_model_train_eva.evaluate_model()
+        mr, mrr, hits_at_10 = eva_obj.evaluate_model()
         #save evaluation results:
         save_evaluation_res(mr=mr,
                             mrr=mrr,
