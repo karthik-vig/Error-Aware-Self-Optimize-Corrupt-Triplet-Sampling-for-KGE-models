@@ -1,28 +1,24 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
+
 class TransEBoost():
-    def __init__(self, start_epoch, end_epoch, train_data, val_data, seed, device, batch_size, model, optimizer, num_entity):
-        self.start_epoch=start_epoch
-        self.end_epoch=end_epoch
-        self.train_data=train_data
-        self.val_data=val_data
-        self.seed=seed
-        self.device=device
-        self.batch_size=batch_size
-        self.model=model
-        self.optimizer=optimizer
-        self.num_entity=num_entity
-
-        self.tail_dict={}
-        self.head_dict={}
-
+    def __init__(self, start_epoch, end_epoch, train_data, seed, device, batch_size, model, optimizer, num_entity):
+        self.start_epoch = start_epoch
+        self.end_epoch = end_epoch
+        self.train_data = train_data
+        self.seed = seed
+        self.device = device
+        self.batch_size = batch_size
+        self.model = model
+        self.optimizer = optimizer
+        self.num_entity = num_entity
+        self.tail_dict = {}
+        self.head_dict = {}
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
-
-        self.test_triplet=torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
-        self.all_entities=torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
-        self.score_tensor=torch.arange(self.batch_size * 2, dtype=torch.float64).to(self.device, non_blocking=True)
+        self.test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
+        self.all_entities = torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
 
     def tensor_to_dataloader(self, data):
         return DataLoader(TensorDataset(data),
@@ -31,80 +27,56 @@ class TransEBoost():
                           pin_memory=True)
 
     def get_ranking_list(self, all_head, triplet):
-        self.test_triplet[:, 1]=triplet[1]
+        self.test_triplet[:, 1] = triplet[1]
         compare_val = None
         if all_head:
-            compare_val=triplet[0]
-            self.test_triplet[:, 0]=self.all_entities
-            self.test_triplet[:, 2]=triplet[2]
+            compare_val = triplet[0]
+            self.test_triplet[:, 0] = self.all_entities
+            self.test_triplet[:, 2] = triplet[2]
         else:
-            compare_val=triplet[2]
-            self.test_triplet[:, 0]=triplet[0]
-            self.test_triplet[:, 2]=self.all_entities
-
+            compare_val = triplet[2]
+            self.test_triplet[:, 0] = triplet[0]
+            self.test_triplet[:, 2] = self.all_entities
         ranked_entities = self.model.predict(self.test_triplet)
         pos = torch.where(ranked_entities == compare_val)[0]
-        entities_ranked_higher=ranked_entities[:pos]
+        entities_ranked_higher = ranked_entities[:pos]
         del ranked_entities
-        rank=pos + 1
-
+        rank = pos + 1
         return rank, entities_ranked_higher
 
-    def evaluate(self, data, print_cond=False):
-        #print('Starting evaluation for TransE boosting: ')
-        rank_count=0
+    def evaluate(self, data):
         self.tail_dict = {}
         self.head_dict = {}
         for index, triplet in enumerate(data):
-            #for tail:
+            # for tail:
             tail_rank, tail_entities_ranked_higher = self.get_ranking_list(all_head=False, triplet=triplet)
-            #tail_rank+=1 #error
-            self.score_tensor[rank_count]=tail_rank
             if tail_rank > 10:
-                self.tail_dict[index] = torch.cat(( self.tail_dict.get(index, torch.tensor([], dtype=torch.int64,device=self.device) ),
-                                                    tail_entities_ranked_higher)).unique()
-
-            #for head:
+                self.tail_dict[index] = torch.cat(
+                    (self.tail_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
+                     tail_entities_ranked_higher)).unique()
+            # for head:
             head_rank, head_entities_ranked_higher = self.get_ranking_list(all_head=True, triplet=triplet)
-            #head_rank+=1 #error
-            self.score_tensor[rank_count + 1]=head_rank
             if head_rank > 10:
-                self.head_dict[index] = torch.cat(( self.head_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
-                                                    head_entities_ranked_higher)).unique()
-
-            rank_count+=2
-
-        mr=torch.mean(self.score_tensor)
-        mrr=torch.reciprocal(self.score_tensor).mean()
-        hits_at_10=torch.where(self.score_tensor < 11.0, 1.0, 0.0).mean()
-
-        if print_cond:
-            print('MR: ', mr)
-            print('MRR: ', mrr)
-            print('Hits@10: ', hits_at_10)
-
+                self.head_dict[index] = torch.cat(
+                    (self.head_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
+                     head_entities_ranked_higher)).unique()
 
     def sample_corr_batch(self, sample_batch):
         sample_batch = sample_batch.clone().detach()
-        # offset=0
-        # if self.batch_size % 2 != 0:
-        #     offset=1
-        head_or_tail=torch.randint(0, 2, (1,))
-
-        if head_or_tail == 0: #replace tail
-            tail_dict_keys=self.tail_dict.keys()
+        head_or_tail = torch.randint(0, 2, (1,))
+        if head_or_tail == 0:  # replace tail
+            tail_dict_keys = self.tail_dict.keys()
             for index, triplet in enumerate(sample_batch):
                 if index in tail_dict_keys:
                     temp = torch.randint(1, 11, (1,))
                     if temp <= 7:
-                        dict_len=self.tail_dict[index].shape[0]
-                        sample_batch[index, 2]=self.tail_dict[index][torch.randint(0, dict_len, (1,))]
+                        dict_len = self.tail_dict[index].shape[0]
+                        sample_batch[index, 2] = self.tail_dict[index][torch.randint(0, dict_len, (1,))]
                     else:
-                        sample_batch[index, 2]=torch.randint(0, self.num_entity, (1,))
+                        sample_batch[index, 2] = torch.randint(0, self.num_entity, (1,))
                 else:
-                    sample_batch[index, 2]=torch.randint(0, self.num_entity, (1,))
-
-        else: #replace head
+                    sample_batch[index, 2] = torch.randint(0, self.num_entity, (1,))
+        else:  # replace head
             head_dict_keys = self.head_dict.keys()
             for index, triplet in enumerate(sample_batch):
                 if index in head_dict_keys:
@@ -117,28 +89,25 @@ class TransEBoost():
                         sample_batch[index, 0] = torch.randint(0, self.num_entity, (1,))
                 else:
                     sample_batch[index, 0] = torch.randint(0, self.num_entity, (1,))
-
         return sample_batch
 
     def train(self):
         print('Starting TransE boosting Training: ')
         for epoch in range(self.start_epoch, self.end_epoch + 1):
             print('Starting epoch: ', epoch)
-            avg_train_loss=0
+            avg_train_loss = 0
             for sample_batch in self.tensor_to_dataloader(self.train_data):
                 sample_batch = sample_batch[0].to(self.device, non_blocking=True)
-                self.evaluate(data=sample_batch, print_cond=False)
+                self.evaluate(data=sample_batch)
                 corr_sample_batch = self.sample_corr_batch(sample_batch=sample_batch).to(self.device, non_blocking=True)
                 loss = self.model(sample_batch, corr_sample_batch)
-                avg_train_loss+=loss.sum()
+                avg_train_loss += loss.sum()
                 self.optimizer.zero_grad()
                 loss.mean().backward()
                 self.optimizer.step()
-
             print(epoch, 'boost epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
-            torch.save(self.model, 'transe_boosted_models/transe_boost_model_'+str(epoch)+'.pt')
-
+            torch.save(self.model, 'transe_boosted_models/transe_boost_model_' + str(epoch) + '.pt')
 
 
 class TransEBoost2():
@@ -162,8 +131,8 @@ class TransEBoost2():
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
 
-        self.test_triplet=torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
-        self.all_entities=torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
+        self.test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
+        self.all_entities = torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
         self.err_index = self.get_err_index(data=self.train_data, model=self.pre_model)
 
     def tensor_to_dataloader(self, data):
@@ -173,22 +142,22 @@ class TransEBoost2():
                           pin_memory=True)
 
     def get_ranking_list(self, all_head, triplet, model, get_err_entities=True):
-        self.test_triplet[:, 1]=triplet[1]
+        self.test_triplet[:, 1] = triplet[1]
         if all_head:
-            compare_val=triplet[0]
-            self.test_triplet[:, 0]=self.all_entities
-            self.test_triplet[:, 2]=triplet[2]
+            compare_val = triplet[0]
+            self.test_triplet[:, 0] = self.all_entities
+            self.test_triplet[:, 2] = triplet[2]
         else:
-            compare_val=triplet[2]
-            self.test_triplet[:, 0]=triplet[0]
-            self.test_triplet[:, 2]=self.all_entities
+            compare_val = triplet[2]
+            self.test_triplet[:, 0] = triplet[0]
+            self.test_triplet[:, 2] = self.all_entities
 
         ranked_entities = model.predict(self.test_triplet)
         pos = torch.where(ranked_entities == compare_val)[0]
         if get_err_entities:
-            entities_ranked_higher=ranked_entities[:pos]
+            entities_ranked_higher = ranked_entities[:pos]
         del ranked_entities
-        rank=pos + 1
+        rank = pos + 1
         if get_err_entities:
             return rank, entities_ranked_higher
         else:
@@ -198,25 +167,27 @@ class TransEBoost2():
         self.tail_dict = {}
         self.head_dict = {}
         for index, triplet in enumerate(data):
-            #for tail:
+            # for tail:
             tail_rank, tail_entities_ranked_higher = self.get_ranking_list(all_head=False, model=model, triplet=triplet)
             if tail_rank > 10:
-                self.tail_dict[index] = torch.cat(( self.tail_dict.get(index, torch.tensor([], dtype=torch.int64,device=self.device) ),
-                                                    tail_entities_ranked_higher)).unique()
+                self.tail_dict[index] = torch.cat(
+                    (self.tail_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
+                     tail_entities_ranked_higher)).unique()
 
-            #for head:
+            # for head:
             head_rank, head_entities_ranked_higher = self.get_ranking_list(all_head=True, model=model, triplet=triplet)
             if head_rank > 10:
-                self.head_dict[index] = torch.cat(( self.head_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
-                                                    head_entities_ranked_higher)).unique()
+                self.head_dict[index] = torch.cat(
+                    (self.head_dict.get(index, torch.tensor([], dtype=torch.int64, device=self.device)),
+                     head_entities_ranked_higher)).unique()
 
     def get_err_index(self, data, model):
         err_index = []
         for index, triplet in enumerate(data):
-            #for tail rank:
+            # for tail rank:
             tail_rank = self.get_ranking_list(all_head=False, model=model, triplet=triplet, get_err_entities=False)
 
-            #for head rank:
+            # for head rank:
             head_rank = self.get_ranking_list(all_head=True, model=model, triplet=triplet, get_err_entities=False)
 
             if head_rank > 10 or tail_rank > 10:
@@ -225,7 +196,6 @@ class TransEBoost2():
             if index % 50000 == 0:
                 print('Evaluated error index till: ', index)
         return torch.tensor(err_index)
-
 
     def sample_corr_batch(self, sample_batch):
         sample_batch = sample_batch.clone().detach()
@@ -255,7 +225,7 @@ class TransEBoost2():
             for epoch in range(self.start_epoch, self.end_epoch + 1):
                 print('Starting epoch: ', epoch)
                 avg_train_loss = 0
-                for sample_batch in self.tensor_to_dataloader(self.train_data[err_index,:]):
+                for sample_batch in self.tensor_to_dataloader(self.train_data[err_index, :]):
                     sample_batch = sample_batch[0].to(self.device, non_blocking=True)
                     self.evaluate(data=sample_batch, model=self.pre_model)
                     corr_sample_batch = self.sample_corr_batch(sample_batch=sample_batch).to(self.device,
@@ -267,11 +237,8 @@ class TransEBoost2():
                     self.optimizer.step()
                 print(epoch, 'boost epoch is done')
                 print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
-            torch.save(self.cur_model, 'transe_boosted2_models/transe_boost2_model_'+str(model)+'.pt')
+            torch.save(self.cur_model, 'transe_boosted2_models/transe_boost2_model_' + str(model) + '.pt')
             self.pre_model = self.cur_model
             pre_err_index = err_index
-            err_index = self.get_err_index(self.train_data[err_index,:], model=self.cur_model)
+            err_index = self.get_err_index(self.train_data[err_index, :], model=self.cur_model)
             err_index = pre_err_index[err_index]
-
-
-
