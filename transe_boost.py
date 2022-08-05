@@ -1,9 +1,11 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader
+from train_and_evaluate import SaveData
 
 
-class TransEBoost():
-    def __init__(self, start_epoch, end_epoch, train_data, seed, device, batch_size, model, optimizer, num_entity):
+class TransEBoost(SaveData):
+    def __init__(self, start_epoch, end_epoch, train_data, seed, device, batch_size, model, optimizer, num_entity,
+                 folder, save_epoch):
         self.start_epoch = start_epoch
         self.end_epoch = end_epoch
         self.train_data = train_data
@@ -13,6 +15,8 @@ class TransEBoost():
         self.model = model
         self.optimizer = optimizer
         self.num_entity = num_entity
+        self.folder = folder
+        self.save_epoch = save_epoch
         self.tail_dict = {}
         self.head_dict = {}
         torch.manual_seed(self.seed)
@@ -107,12 +111,16 @@ class TransEBoost():
                 self.optimizer.step()
             print(epoch, 'boost epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
-            torch.save(self.model, 'transe_boosted_models/transe_boost_model_' + str(epoch) + '.pt')
+            if epoch % self.save_epoch == 0:
+                self.save(folder=self.folder,
+                          model=self.model,
+                          epoch=epoch,
+                          avg_loss=avg_train_loss)
 
 
-class TransEBoost2():
+class TransEBoost2(SaveData):
     def __init__(self, pre_model, cur_model, train_data, start_epoch, end_epoch, seed, device, batch_size, start_model,
-                 end_model, optimizer, num_entity):
+                 end_model, optimizer, num_entity, folder, save_epoch):
         self.pre_model = pre_model
         self.cur_model = cur_model
         self.train_data = train_data
@@ -125,12 +133,12 @@ class TransEBoost2():
         self.end_model = end_model
         self.optimizer = optimizer
         self.num_entity = num_entity
+        self.folder = folder
+        self.save_epoch = save_epoch
         self.tail_dict = {}
         self.head_dict = {}
-
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
-
         self.test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
         self.all_entities = torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
         self.err_index = self.get_err_index(data=self.train_data, model=self.pre_model)
@@ -221,10 +229,12 @@ class TransEBoost2():
     def train(self):
         print('Starting TransEBoost2 training:')
         err_index = self.err_index
+        total_epoch = 0
         for model in range(self.start_model, self.end_model):
             for epoch in range(self.start_epoch, self.end_epoch + 1):
                 print('Starting epoch: ', epoch)
                 avg_train_loss = 0
+                total_epoch += 1
                 for sample_batch in self.tensor_to_dataloader(self.train_data[err_index, :]):
                     sample_batch = sample_batch[0].to(self.device, non_blocking=True)
                     self.evaluate(data=sample_batch, model=self.pre_model)
@@ -237,7 +247,11 @@ class TransEBoost2():
                     self.optimizer.step()
                 print(epoch, 'boost epoch is done')
                 print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
-            torch.save(self.cur_model, 'transe_boosted2_models/transe_boost2_model_' + str(model) + '.pt')
+                if total_epoch % self.save_epoch == 0:
+                    self.save(folder=self.folder,
+                              model=self.cur_model,
+                              epoch=total_epoch,
+                              avg_loss=avg_train_loss)
             self.pre_model = self.cur_model
             pre_err_index = err_index
             err_index = self.get_err_index(self.train_data[err_index, :], model=self.cur_model)

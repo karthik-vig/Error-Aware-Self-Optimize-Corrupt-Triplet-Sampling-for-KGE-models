@@ -1,9 +1,29 @@
+import json
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 
-class TransETrain():
-    def __init__(self, train_dataset, batch_size, num_entity, model, device, optimizer, epoch, seed):
+class SaveData:
+    def save(self, folder, model, epoch, avg_loss):
+        file_name = 'transe_' + str(epoch) + '.pt'
+        file_path = folder + '/'
+        try:
+            torch.save(model, file_path + file_name)
+            with open(file_path + 'meta_data.json', 'r+') as json_file:
+                meta_data = json.load(json_file)
+                meta_data['local'][file_name] = {'Average Training Loss': avg_loss,
+                                                 'MR': -1,
+                                                 'MRR': -1,
+                                                 'Hits@10': -1}
+                json.dump(meta_data, json_file, indent=4)
+                json_file.close()
+        except:
+            print('Save failed. Aborting.')
+
+
+class TransETrain(SaveData):
+    def __init__(self, train_dataset, batch_size, num_entity, model, device, optimizer, epoch, seed, folder,
+                 save_epoch):
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         self.train_dataset = train_dataset
@@ -13,6 +33,8 @@ class TransETrain():
         self.device = device
         self.optimizer = optimizer
         self.epoch = epoch
+        self.folder = folder
+        self.save_epoch = save_epoch
         self.train_dataset_len = self.train_dataset.shape[0]
         self.train_data_loader = self.create_dataloader(self.train_dataset)
 
@@ -32,7 +54,7 @@ class TransETrain():
 
     def train_transe(self):
         print('Starting Training:')
-        for i in range(1, self.epoch + 1):
+        for epoch in range(1, self.epoch + 1):
             avg_train_loss = 0
             for index, batch_data in enumerate(self.train_data_loader):
                 sample_data = batch_data[0]
@@ -43,32 +65,36 @@ class TransETrain():
                 self.optimizer.zero_grad()
                 loss.mean().backward()
                 self.optimizer.step()
-            print(i, 'epoch is done')
+            print(epoch, 'epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_dataset_len)
-            # evaluate_model()
+            if epoch % self.save_epoch == 0:
+                self.save(folder=self.folder,
+                          model=self.model,
+                          epoch=epoch,
+                          avg_loss=avg_train_loss)
 
 
-
-class Evaluation():
+class Evaluation:
     def __init__(self, data, model, num_entity, device):
         self.dataset = data
         self.model = model
         self.num_entity = num_entity
         self.device = device
-        self.all_entities = self.all_entities = torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device, non_blocking=True)
+        self.all_entities = self.all_entities = torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device,
+                                                                                                       non_blocking=True)
         self.test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
 
     def get_ranking_list(self, all_head, triplet):
-        self.test_triplet[:, 1]=triplet[1]
+        self.test_triplet[:, 1] = triplet[1]
         compare_val = None
         if all_head:
-            compare_val=triplet[0]
-            self.test_triplet[:, 0]=self.all_entities
-            self.test_triplet[:, 2]=triplet[2]
+            compare_val = triplet[0]
+            self.test_triplet[:, 0] = self.all_entities
+            self.test_triplet[:, 2] = triplet[2]
         else:
-            compare_val=triplet[2]
-            self.test_triplet[:, 0]=triplet[0]
-            self.test_triplet[:, 2]=self.all_entities
+            compare_val = triplet[2]
+            self.test_triplet[:, 0] = triplet[0]
+            self.test_triplet[:, 2] = self.all_entities
         ranked_entities = self.model.predict(self.test_triplet)
         pos = torch.where(ranked_entities == compare_val)[0]
         del ranked_entities
@@ -98,4 +124,3 @@ class Evaluation():
         print('Mean Reciprocal Rank for prediction is: ', mrr_score)
         print('Hits@10 for prediction is: ', hit_at_10_score)
         return mr_score, mrr_score, hit_at_10_score
-
