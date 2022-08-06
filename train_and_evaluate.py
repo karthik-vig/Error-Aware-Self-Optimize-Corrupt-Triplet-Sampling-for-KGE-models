@@ -14,20 +14,22 @@ class SaveData:
             torch.save(model, model_name_prefix + file_path + file_name)
             with open(file_path + 'meta_data.json', 'r+') as json_file:
                 meta_data = json.load(json_file)
-                meta_data['local'][file_name] = {'Average Training Loss': avg_loss,
+                meta_data['local'][file_name[:-3]] = {'Average Training Loss': float(avg_loss),
                                                  'MR': -1,
                                                  'MRR': -1,
                                                  'Hits@10': -1}
-                meta_data['global']['latest epoch'] = epoch
+                meta_data['global']['latest epoch'] = int(epoch)
+                json_file.seek(0)
                 json.dump(meta_data, json_file, indent=4)
+                json_file.truncate()
                 json_file.close()
         except:
-            print('Save failed. Aborting.')
+            print('Save failed.')
 
 
 class TransETrain(SaveData):
-    def __init__(self, train_dataset, batch_size, num_entity, model, device, optimizer, epoch, seed, folder,
-                 save_epoch=10):
+    def __init__(self, train_dataset, batch_size, num_entity, model, device, optimizer, start_epoch, end_epoch, seed, folder,
+                 save_epoch=1):
         super().__init__(folder)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
@@ -37,7 +39,8 @@ class TransETrain(SaveData):
         self.model = model
         self.device = device
         self.optimizer = optimizer
-        self.epoch = epoch
+        self.start_epoch = start_epoch
+        self.end_epoch = end_epoch
         # self.folder = folder
         self.save_epoch = save_epoch
         self.train_dataset_len = self.train_dataset.shape[0]
@@ -57,9 +60,9 @@ class TransETrain(SaveData):
             corr_triplet[:, 2] = entity_tensor
         return corr_triplet
 
-    def train_transe(self):
+    def train(self):
         print('Starting Training:')
-        for epoch in range(1, self.epoch + 1):
+        for epoch in range(self.start_epoch, self.end_epoch + 1):
             avg_train_loss = 0
             for index, batch_data in enumerate(self.train_data_loader):
                 sample_data = batch_data[0]
@@ -71,7 +74,8 @@ class TransETrain(SaveData):
                 loss.mean().backward()
                 self.optimizer.step()
             print(epoch, 'epoch is done')
-            print('Average Training loss is: ', avg_train_loss / self.train_dataset_len)
+            avg_train_loss = avg_train_loss / self.train_dataset_len
+            print('Average Training loss is: ', avg_train_loss)
             if epoch % self.save_epoch == 0:
                 self.save(model=self.model,
                           epoch=epoch,
