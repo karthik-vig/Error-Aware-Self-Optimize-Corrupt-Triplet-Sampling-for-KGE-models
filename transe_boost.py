@@ -113,7 +113,8 @@ class TransEBoost(SaveData):
                 loss.mean().backward()
                 self.optimizer.step()
             print(epoch, 'boost epoch is done')
-            print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
+            avg_train_loss = avg_train_loss / self.train_data.shape[0]
+            print('Average Training loss is: ', avg_train_loss)
             if epoch % self.save_epoch == 0:
                 self.save(model=self.model,
                           epoch=epoch,
