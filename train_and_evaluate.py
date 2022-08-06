@@ -4,17 +4,21 @@ from torch.utils.data import TensorDataset, DataLoader
 
 
 class SaveData:
-    def save(self, folder, model, epoch, avg_loss):
+    def __init__(self, folder):
+        self.folder = folder
+
+    def save(self, model, epoch, avg_loss, model_name_prefix=''):
         file_name = 'transe_' + str(epoch) + '.pt'
-        file_path = folder + '/'
+        file_path = self.folder + '/'
         try:
-            torch.save(model, file_path + file_name)
+            torch.save(model, model_name_prefix + file_path + file_name)
             with open(file_path + 'meta_data.json', 'r+') as json_file:
                 meta_data = json.load(json_file)
                 meta_data['local'][file_name] = {'Average Training Loss': avg_loss,
                                                  'MR': -1,
                                                  'MRR': -1,
                                                  'Hits@10': -1}
+                meta_data['global']['latest epoch'] = epoch
                 json.dump(meta_data, json_file, indent=4)
                 json_file.close()
         except:
@@ -23,7 +27,8 @@ class SaveData:
 
 class TransETrain(SaveData):
     def __init__(self, train_dataset, batch_size, num_entity, model, device, optimizer, epoch, seed, folder,
-                 save_epoch):
+                 save_epoch=10):
+        super().__init__(folder)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         self.train_dataset = train_dataset
@@ -33,7 +38,7 @@ class TransETrain(SaveData):
         self.device = device
         self.optimizer = optimizer
         self.epoch = epoch
-        self.folder = folder
+        # self.folder = folder
         self.save_epoch = save_epoch
         self.train_dataset_len = self.train_dataset.shape[0]
         self.train_data_loader = self.create_dataloader(self.train_dataset)
@@ -68,8 +73,7 @@ class TransETrain(SaveData):
             print(epoch, 'epoch is done')
             print('Average Training loss is: ', avg_train_loss / self.train_dataset_len)
             if epoch % self.save_epoch == 0:
-                self.save(folder=self.folder,
-                          model=self.model,
+                self.save(model=self.model,
                           epoch=epoch,
                           avg_loss=avg_train_loss)
 

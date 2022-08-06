@@ -1,6 +1,6 @@
 import json
-import re
 import os
+import re
 
 import torch
 from pykeen.datasets import FB15k237, FB15k, WN18
@@ -12,56 +12,117 @@ from transe_boost import TransEBoost, TransEBoost2
 
 class LoadData:
     def __init__(self, folder_list):
+        self.train_dataset = None
+        self.val_dataset = None
+        self.test_dataset = None
+        self.dataset_name = None
+        self.num_entity = None
+        self.num_relation = None
         self.folder_list = folder_list
         # check if the necessary folders exist
-        exist_dir = [dir_name for dir_name in os.listdir('.') if os.path.isdir(dir_name) if dir_name in folder_list]
-        if len(exist_dir) != len(folder_list):
-            dir_to_create = [dir_name for dir_name in folder_list if dir_name not in exist_dir]
+        exist_dir = [dir_name for dir_name in os.listdir('.') if os.path.isdir(dir_name) if
+                     dir_name in self.folder_list]
+        if len(exist_dir) != len(self.folder_list):
+            dir_to_create = [dir_name for dir_name in self.folder_list if dir_name not in exist_dir]
             for direc in dir_to_create:
                 os.mkdir(direc)
 
-    def load(self):
-        pass
+    def resume_exp(self, folder):
+        print('Experiment List: ')
+        for exp in [dir_name for dir_name in os.listdir(folder + '/') if os.path.isdir(dir_name)]:
+            print(exp)
+        select_exp_num = input('Choose a Exp. number from list: ')
+        exp_dir_name = folder + '/' + 'exp_' + str(select_exp_num)
+        with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
+            meta_data = json.load(json_file)
+            json_file.close()
+        dataset_name = meta_data['global']['dataset name']
+        if dataset_name == 'FB15k':
+            automatic_input = '1'
+        elif dataset_name == 'FB15k237':
+            automatic_input = '2'
+        elif dataset_name == 'WN18':
+            automatic_input = '3'
+        self.get_dataset(automatic_input=automatic_input)
+        return meta_data, exp_dir_name
 
-    def get_dataset(self):
-        select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit\nEnter 1,2,3 or 4:''')
+    def load(self, folder):
+        choose_exp = input('Run a new experiment (y), or continue with an existing one (n) ?: ')
+        if choose_exp == 'y':
+            meta_data, exp_dir_name = self.create_exp(folder=folder)
+            return meta_data, exp_dir_name, self.train_dataset, self.val_dataset, self.test_dataset, self.num_entity, self.num_relation
+        elif choose_exp == 'n':
+            meta_data, exp_dir_name = self.resume_exp(folder=folder)
+            return meta_data, exp_dir_name, self.train_dataset, self.val_dataset, self.test_dataset, self.num_entity, self.num_relation
+
+    def get_latest_exp(self, folder):
+        exist_dir = [dir_name for dir_name in os.listdir(folder + '/') if os.path.isdir(dir_name)]
+        if len(exist_dir) != 0:
+            file_numbers = [int(re.findall('\d+', dir_name)[0]) for dir_name in exist_dir]
+            if len(file_numbers) != 0:
+                latest_exp_num = max(file_numbers)
+            else:
+                return 0
+        else:
+            return 0
+        return latest_exp_num
+
+    def create_exp(self, folder):
+        new_exp_num = self.get_latest_exp(folder) + 1
+        exp_dir_name = folder + '/' + 'exp_' + new_exp_num
+        os.mkdir(exp_dir_name)
+        self.get_dataset()
+        meta_data = {'global': {'device': input('Device: '),
+                                'seed': int(input('Seed: ')),
+                                'dataset name': self.dataset_name,
+                                'num of entity': self.num_entity,
+                                'num of relation': self.num_relation,
+                                'emb dim': int(input('Embedding Dimension: ')),
+                                'gamma': float(input('Gamma: ')),
+                                'lr': float(input('Learning rate: ')),
+                                'l2': float(input('L2 Weight Decay: ')),
+                                'batch size': int(input('Batch Size: ')),
+                                'latest epoch': -1},
+                     'local': {}
+                     }
+        with open(exp_dir_name + '/' + 'meta_data.json', 'w+') as json_file:
+            json.dump(meta_data, json_file, indent=4)
+            json_file.close()
+        return meta_data, exp_dir_name
+
+    def get_dataset(self, automatic_input=None):
+        if automatic_input == None:
+            select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit\nEnter 1,2,3 or 4:''')
+        else:
+            select_dataset = automatic_input
         if select_dataset == '1':
-            fb15k_dataset = FB15k()
-            train_dataset = fb15k_dataset.training.mapped_triples
-            val_dataset = fb15k_dataset.validation.mapped_triples
-            test_dataset = fb15k_dataset.testing.mapped_triples
-            num_entity = fb15k_dataset.num_entities.real
-            num_relation = fb15k_dataset.num_relations.real
-            dataset_name = 'FB15k'
+            dataset = FB15k()
+            self.dataset_name = 'FB15k'
         elif select_dataset == '2':
-            fb15k237_dataset = FB15k237()
-            train_dataset = fb15k237_dataset.training.mapped_triples
-            val_dataset = fb15k237_dataset.validation.mapped_triples
-            test_dataset = fb15k237_dataset.testing.mapped_triples
-            num_entity = fb15k237_dataset.num_entities.real
-            num_relation = fb15k237_dataset.num_relations.real
-            dataset_name = 'FB15k237'
+            dataset = FB15k237()
+            self.dataset_name = 'FB15k237'
         elif select_dataset == '3':
-            wn18_dataset = WN18()
-            train_dataset = wn18_dataset.training.mapped_triples
-            val_dataset = wn18_dataset.validation.mapped_triples
-            test_dataset = wn18_dataset.testing.mapped_triples
-            num_entity = wn18_dataset.num_entities.real
-            num_relation = wn18_dataset.num_relations.real
-            dataset_name = 'WN18'
+            dataset = WN18()
+            self.dataset_name = 'WN18'
         elif select_dataset == '4':
             return
         else:
             return
+        # assign the values
+        self.train_dataset = dataset.training.mapped_triples
+        self.val_dataset = dataset.validation.mapped_triples
+        self.test_dataset = dataset.testing.mapped_triples
+        self.num_entity = dataset.num_entities.real
+        self.num_relation = dataset.num_relations.real
         # print their shapes
-        print('Training dataset size: ', train_dataset.shape)
-        print('Validation dataset size: ', val_dataset.shape)
-        print('Testing dataset size: ', test_dataset.shape)
-        print('Number of Entities: ', num_entity)
-        print('Number of relations: ', num_relation)
-        print('Dataset Name: ', dataset_name)
+        print('Training dataset size: ', self.train_dataset.shape)
+        print('Validation dataset size: ', self.val_dataset.shape)
+        print('Testing dataset size: ', self.test_dataset.shape)
+        print('Number of Entities: ', self.num_entity)
+        print('Number of relations: ', self.num_relation)
+        print('Dataset Name: ', self.dataset_name)
         # return the values
-        return train_dataset, val_dataset, test_dataset, num_entity, num_relation, dataset_name
+        # return train_dataset, val_dataset, test_dataset, num_entity, num_relation, dataset_name
 
 
 # set transe model paratmeters:
@@ -90,13 +151,13 @@ def main():
     load_data = LoadData()
     train_dataset, val_dataset, test_dataset, num_entity, num_relation, dataset_name = load_data.get_dataset()
 
-    select_train_model = input('''1) Train a new TransE model?
-                               \n2) Train a existing TransE model? 
-                               \n3) Evaluate a model? 
-                               \n4) Resume Training a boosted model?
-                               \n5) Transe Boost 2 model training?
-                               \n6) Exit 
-                               \n Enter (1, 2, 3, 4, 5, 6): ''')
+    select_train_model = input('''
+                               \n1) Train a basic TransE model? 
+                               \n2) Evaluate a model? 
+                               \n3) Training a self-training type 1 model?
+                               \n4) Training a self-training type 2 model?
+                               \n5) Exit 
+                               \n Enter (1, 2, 3, 4, 5): ''')
 
     if select_train_model == '1':
         # Create the transe model:
@@ -258,7 +319,7 @@ def main():
 
 
 def restore_boosted_model(num_entity, num_relation):
-    file_list = listdir('transe_boosted_models/')
+    file_list = os.listdir('transe_boosted_models/')
     if len(file_list) == 0:
         print('Creating a new TransE model: ')
         transe_model = TransE(device=device,
@@ -284,7 +345,7 @@ def restore_boosted_model(num_entity, num_relation):
 
 
 def save_original_transe(model, folder, num_entity, num_relation, dataset_name, mr, mrr, hits_at_10):
-    file_list = listdir(folder + '/')
+    file_list = os.listdir(folder + '/')
     meta_data = {'Device': device,
                  'Seed': seed,
                  'Dataset Name': dataset_name,
@@ -315,7 +376,7 @@ def save_original_transe(model, folder, num_entity, num_relation, dataset_name, 
 
 
 def load_original_transe(num_entity, num_relation):
-    file_list = listdir('transe_conorg_models/')
+    file_list = os.listdir('transe_conorg_models/')
     if len(file_list) == 0:
         print('No existing model found')
         print('Creating a new TransE model: ')
