@@ -11,7 +11,7 @@ from transe_boost import TransEBoost, TransEBoost2
 
 
 class LoadMetaDataHandling:
-    def __init__(self, folder_list):
+    def __init__(self, folder_list, dataset_num_map):
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
@@ -19,6 +19,7 @@ class LoadMetaDataHandling:
         self.num_entity = None
         self.num_relation = None
         self.folder_list = folder_list
+        self.dataset_num_map = dataset_num_map
         # check if the necessary folders exist
         exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name) if
                      dir_name in self.folder_list]
@@ -26,6 +27,16 @@ class LoadMetaDataHandling:
             dir_to_create = [dir_name for dir_name in self.folder_list if dir_name not in exist_dir]
             for direc in dir_to_create:
                 os.mkdir(direc)
+
+    def dataset_name_to_number(self, dataset_name):
+        # if dataset_name == 'FB15k':
+        #     automatic_input = '1'
+        # elif dataset_name == 'FB15k237':
+        #     automatic_input = '2'
+        # elif dataset_name == 'WN18':
+        #     automatic_input = '3'
+        # return automatic_input
+        return self.dataset_num_map[dataset_name]
 
     def resume_exp(self, folder):
         print('Experiment List: ')
@@ -38,13 +49,7 @@ class LoadMetaDataHandling:
         with open(exp_dir_name + '/' + 'meta_data.json', 'r') as json_file:
             meta_data = json.load(json_file)
             json_file.close()
-        dataset_name = meta_data['global']['dataset name']
-        if dataset_name == 'FB15k':
-            automatic_input = '1'
-        elif dataset_name == 'FB15k237':
-            automatic_input = '2'
-        elif dataset_name == 'WN18':
-            automatic_input = '3'
+        automatic_input = self.dataset_name_to_number(dataset_name=meta_data['global']['dataset name'])
         self.get_dataset(automatic_input=automatic_input)
         transe_model = torch.load(exp_dir_name + '/' + 'transe_' + str(meta_data['global']['latest epoch']) + '.pt')
         return meta_data, exp_dir_name, transe_model
@@ -165,7 +170,8 @@ class LoadMetaDataHandling:
 
 def main():
     folder_list = ['transe_original', 'transe_selftrain_type_1', 'transe_selftrain_type_2']
-    load_data = LoadMetaDataHandling(folder_list=folder_list)
+    dataset_num_map = {'FB15k':'1', 'FB15k237':'2', 'WN18':'3'}
+    load_data = LoadMetaDataHandling(folder_list=folder_list, dataset_num_map=dataset_num_map)
 
     select_train_model = input('''
                                \n1) Train a basic TransE model? 
@@ -229,7 +235,8 @@ def main():
                 print('Error in loading model. Aborting.')
                 return -1
             print('Done!\nModel being evaluated: ', evaluate_model + 'transe_' + select_eva_model_num + '.pt')
-            load_data.get_dataset()
+            automatic_input = load_data.dataset_name_to_number(dataset_name=meta_data['global']['dataset name'])
+            load_data.get_dataset(automatic_input=automatic_input)
             train_dataset, val_dataset, test_dataset = load_data.get_data()
             # specify the values for evaluation:
             eva_obj = Evaluation(data=val_dataset,
