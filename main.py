@@ -218,36 +218,41 @@ def main():
                                   3) self training type 2\n
                                   Enter (1,2,3):''')
         select_exp_num = input('Enter the exp. number: ')
-        select_eva_model_num = input('''Enter the model number: ''')
+        select_eva_model_num = list(map(int, input('''Enter range of models to be evaluated: ''').split()))
         if select_eva_model == '1':
             evaluate_model = folder_list[0] + '/'
         elif select_eva_model == '2':
             evaluate_model = folder_list[1] + '/'
         elif select_eva_model == '3':
             evaluate_model = folder_list[2] + '/'
-        evaluate_model += 'exp_' + select_exp_num + '/' #+ 'transe_' + select_eva_model_num + '.pt'
+        evaluate_model += 'exp_' + select_exp_num + '/'
         with open(evaluate_model + 'meta_data.json', 'r+') as json_file:
             meta_data = json.load(json_file)
-            print('Loading a TransE model from disk...')
-            try:
-                transe_model = torch.load(evaluate_model + 'transe_' + select_eva_model_num + '.pt')
-            except:
-                print('Error in loading model. Aborting.')
-                return -1
-            print('Done!\nModel being evaluated: ', evaluate_model + 'transe_' + select_eva_model_num + '.pt')
+            # get the appropriate dataset to evaluate the model
             automatic_input = load_data.dataset_name_to_number(dataset_name=meta_data['global']['dataset name'])
             load_data.get_dataset(automatic_input=automatic_input)
             train_dataset, val_dataset, test_dataset = load_data.get_data()
-            # specify the values for evaluation:
-            eva_obj = Evaluation(data=val_dataset,
-                                model=transe_model,
-                                num_entity=meta_data['global']['num entity'],
-                                device=meta_data['global']['device'])
-            # Evaluate TransE model:
-            mr, mrr, hits_at_10 = eva_obj.evaluate_model()
-            meta_data['local']['transe_'+select_eva_model_num]['MR'] = float(mr)
-            meta_data['local']['transe_'+select_eva_model_num]['MRR'] = float(mrr)
-            meta_data['local']['transe_'+select_eva_model_num]['Hits@10'] = float(hits_at_10)
+            for eva_model_num in range(select_eva_model_num[0], select_eva_model_num[1] + 1):
+                eva_model_num = str(eva_model_num)
+                # load the model to be evaluated
+                print('Loading a TransE model from disk...')
+                try:
+                    transe_model = torch.load(evaluate_model + 'transe_' + eva_model_num + '.pt')
+                except:
+                    print('Error in loading model. Aborting.')
+                    return -1
+                print('Done!\nModel being evaluated: ', evaluate_model + 'transe_' + eva_model_num + '.pt')
+                # specify the values for evaluation:
+                eva_obj = Evaluation(data=val_dataset,
+                                    model=transe_model,
+                                    num_entity=meta_data['global']['num entity'],
+                                    device=meta_data['global']['device'])
+                # Evaluate TransE model:
+                mr, mrr, hits_at_10 = eva_obj.evaluate_model()
+                # store the values in meta data file for that model
+                meta_data['local']['transe_'+eva_model_num]['MR'] = float(mr)
+                meta_data['local']['transe_'+eva_model_num]['MRR'] = float(mrr)
+                meta_data['local']['transe_'+eva_model_num]['Hits@10'] = float(hits_at_10)
             json_file.seek(0)
             json.dump(meta_data, json_file, indent=4)
             json_file.truncate()
