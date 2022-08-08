@@ -7,11 +7,11 @@ class SaveData:
     def __init__(self, folder):
         self.folder = folder
 
-    def save(self, model, epoch, avg_loss, model_name_prefix=''):
+    def save(self, model, epoch, avg_loss, **kwargs):
         file_name = 'transe_' + str(epoch) + '.pt'
         file_path = self.folder + '/'
         try:
-            torch.save(model, model_name_prefix + file_path + file_name)
+            torch.save(model, file_path + file_name)
             with open(file_path + 'meta_data.json', 'r+') as json_file:
                 meta_data = json.load(json_file)
                 meta_data['local'][file_name[:-3]] = {'Average Training Loss': float(avg_loss),
@@ -19,6 +19,8 @@ class SaveData:
                                                  'MRR': -1,
                                                  'Hits@10': -1}
                 meta_data['global']['latest epoch'] = int(epoch)
+                for key, value in kwargs.items():
+                    meta_data['global'][key] = value
                 json_file.seek(0)
                 json.dump(meta_data, json_file, indent=4)
                 json_file.truncate()

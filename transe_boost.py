@@ -248,7 +248,8 @@ class TransEBoost2(SaveData):
                     loss.mean().backward()
                     self.optimizer.step()
                 print(epoch, 'boost epoch is done')
-                print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
+                avg_train_loss = avg_train_loss / self.train_data.shape[0]
+                print('Average Training loss is: ', avg_train_loss)
                 self.total_epoch += 1
                 if self.total_epoch % self.save_epoch == 0:
                     model_dict = {'pre_model': self.pre_model,
@@ -256,7 +257,8 @@ class TransEBoost2(SaveData):
                                   }
                     self.save(model=model_dict,
                               epoch=self.total_epoch,
-                              avg_loss=avg_train_loss)
+                              avg_loss=avg_train_loss,
+                              cur_model_num=model_num)
             self.pre_model = copy.deepcopy(self.cur_model)
             # self.save(model=self.pre_model,
             #           epoch=model_num,
