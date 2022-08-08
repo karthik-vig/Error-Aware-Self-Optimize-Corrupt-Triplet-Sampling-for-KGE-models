@@ -29,19 +29,10 @@ class LoadMetaDataHandling:
                 os.mkdir(direc)
 
     def dataset_name_to_number(self, dataset_name):
-        # if dataset_name == 'FB15k':
-        #     automatic_input = '1'
-        # elif dataset_name == 'FB15k237':
-        #     automatic_input = '2'
-        # elif dataset_name == 'WN18':
-        #     automatic_input = '3'
-        # return automatic_input
         return self.dataset_num_map[dataset_name]
 
     def resume_exp(self, folder):
         print('Experiment List: ')
-        # print(folder)
-        # print([dir_name for dir_name in os.listdir('./' + folder + '/')])
         for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if
                     os.path.isdir('./' + folder + '/' + dir_name)]:
             print(exp)
@@ -147,8 +138,6 @@ class LoadMetaDataHandling:
         print('Number of Entities: ', self.num_entity)
         print('Number of relations: ', self.num_relation)
         print('Dataset Name: ', self.dataset_name)
-        # return the values
-        # return train_dataset, val_dataset, test_dataset, num_entity, num_relation, dataset_name
 
     def get_data(self):
         return self.train_dataset, self.val_dataset, self.test_dataset
@@ -163,28 +152,6 @@ class LoadMetaDataHandling:
             json_file.truncate()
             json_file.close()
             return meta_data
-
-
-# # set transe model paratmeters:
-# device = 'cuda'
-# emb_dim = 50
-# gamma = 1
-#
-# # set transe optimizer parameters:
-# lr = 0.01
-# weight_decay = 0
-#
-# # transe training parameters:
-# batch_size = 36
-# epoch = 50
-#
-# # set torch seeds:
-# seed = 2022
-# torch.manual_seed(seed)
-# torch.cuda.manual_seed_all(seed)
-#
-# # TransEBoost parameters:
-# end_epoch = 100
 
 
 def main():
@@ -220,15 +187,6 @@ def main():
                                          folder=exp_dir_name)
         # train TransE model:
         transe_model_train.train()
-        # save the model:
-        # save_original_transe(model=transe_model,
-        #                      folder='transe_neworg_models',
-        #                      num_entity=num_entity,
-        #                      num_relation=num_relation,
-        #                      dataset_name=dataset_name,
-        #                      mr=0,
-        #                      mrr=0,
-        #                      hits_at_10=0)
 
     elif select_train_model == '2':
         select_eva_model = input('''Select model to be evaluated:\n
@@ -276,12 +234,6 @@ def main():
             json.dump(meta_data, json_file, indent=4)
             json_file.truncate()
             json_file.close()
-        # save evaluation results:
-        # save_evaluation_res(mr=mr,
-        #                     mrr=mrr,
-        #                     hits_at_10=hits_at_10,
-        #                     dataset_name=dataset_name,
-        #                     evaluate_model=evaluate_model)
 
     elif select_train_model == '3':
         meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[1])
@@ -300,11 +252,6 @@ def main():
                                        optimizer=optimizer,
                                        num_entity=meta_data['global']['num entity'],
                                        folder=exp_dir_name)
-        # save the meta data:
-        # save_boosted_meta(dataset_name=dataset_name,
-        #                   num_entity=num_entity,
-        #                   num_relation=num_relation,
-        #                   start_epoch=start_epoch)
         # train the model:
         self_train_type1.train()
 
@@ -352,119 +299,6 @@ def main():
 
     elif select_train_model == '5':
         return 0
-
-
-# def restore_boosted_model(num_entity, num_relation):
-#     file_list = os.listdir('transe_boosted_models/')
-#     if len(file_list) == 0:
-#         print('Creating a new TransE model: ')
-#         transe_model = TransE(device=device,
-#                               num_entity=num_entity,
-#                               num_relation=num_relation,
-#                               emb_dim=emb_dim,
-#                               gamma=gamma,
-#                               seed=seed)
-#         print('Done!!')
-#         start_epoch = 1
-#     else:
-#         print('Loading last trained model...')
-#         file_numbers = [int(re.findall('\d+', i)[0]) for i in file_list]
-#         model_num = max(file_numbers)
-#         try:
-#             transe_model = torch.load('transe_boosted_models/transe_boost_model_' + str(model_num) + '.pt')
-#         except:
-#             print('Error encountered while loading model. Aborting.')
-#             return -1, -1
-#         start_epoch = model_num + 1
-#         print('Done!')
-#     return transe_model, start_epoch
-#
-#
-# def save_original_transe(model, folder, num_entity, num_relation, dataset_name, mr, mrr, hits_at_10):
-#     file_list = os.listdir(folder + '/')
-#     meta_data = {'Device': device,
-#                  'Seed': seed,
-#                  'Dataset Name': dataset_name,
-#                  'Number of Entities': num_entity,
-#                  'Number of Relations': num_relation,
-#                  'Embedding Dimension': emb_dim,
-#                  'Gamma': gamma,
-#                  'Learning Rate': lr,
-#                  'L2': weight_decay,
-#                  'Model Number': 0,
-#                  'Epochs': epoch,
-#                  'Batch Size': batch_size,
-#                  'MR': float(mr),
-#                  'MRR': float(mrr),
-#                  'Hits@10': float(hits_at_10)}
-#     if len(file_list) == 0:
-#         meta_data['Model Number'] = 1
-#     else:
-#         file_numbers = [int(re.findall('\d+', i)[0]) for i in file_list]
-#         model_num = max(file_numbers)
-#         model_num += 1
-#         meta_data['Model Number'] = model_num
-#     torch.save(model, folder + '/transe_org_model_' + str(meta_data['Model Number']) + '.pt')
-#     with open(folder + '/meta_data_' + str(meta_data['Model Number']) + '.json', 'w') as json_file:
-#         json.dump(meta_data, json_file, indent=4)
-#         json_file.close()
-#     print('Saving done !!')
-#
-#
-# def load_original_transe(num_entity, num_relation):
-#     file_list = os.listdir('transe_conorg_models/')
-#     if len(file_list) == 0:
-#         print('No existing model found')
-#         print('Creating a new TransE model: ')
-#         transe_model = TransE(device=device,
-#                               num_entity=num_entity,
-#                               num_relation=num_relation,
-#                               emb_dim=emb_dim,
-#                               gamma=gamma,
-#                               seed=seed)
-#         print('Done!!')
-#     else:
-#         file_numbers = [int(re.findall('\d+', i)[0]) for i in file_list]
-#         model_num = max(file_numbers)
-#         try:
-#             transe_model = torch.load('transe_conorg_models/transe_org_model_' + str(model_num) + '.pt')
-#         except:
-#             print('Error encountered while loading model. Aborting.')
-#             return -1
-#     return transe_model
-#
-#
-# def save_evaluation_res(mr, mrr, hits_at_10, dataset_name, evaluate_model):
-#     meta_data = {'Device': device,
-#                  'Seed': seed,
-#                  'Dataset Name': dataset_name,
-#                  'Model Name': evaluate_model.replace('/', '-'),
-#                  'MR': float(mr),
-#                  'MRR': float(mrr),
-#                  'Hits@10': float(hits_at_10)}
-#     with open('evaluation_results/meta_data_' + meta_data['Model Name'][:-3] + '.json', 'w') as json_file:
-#         json.dump(meta_data, json_file, indent=4)
-#         json_file.close()
-#     print('Saving done !!')
-#
-#
-# def save_boosted_meta(dataset_name, num_entity, num_relation, start_epoch):
-#     meta_data = {'Device': device,
-#                  'Seed': seed,
-#                  'Dataset Name': dataset_name,
-#                  'Number of Entities': num_entity,
-#                  'Number of Relations': num_relation,
-#                  'Embedding Dimension': emb_dim,
-#                  'Gamma': gamma,
-#                  'Learning Rate': lr,
-#                  'L2': weight_decay,
-#                  'Start Epoch': start_epoch,
-#                  'Batch Size': batch_size}
-#     with open('transe_boosted_models/meta_data' + str(meta_data['Start Epoch']) + '.json', 'w') as json_file:
-#         json.dump(meta_data, json_file, indent=4)
-#         json_file.close()
-#     print('Saving Done!!')
-
 
 if __name__ == '__main__':
     main()

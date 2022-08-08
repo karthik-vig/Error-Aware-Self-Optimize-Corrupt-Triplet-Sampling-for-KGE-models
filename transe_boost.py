@@ -260,10 +260,6 @@ class TransEBoost2(SaveData):
                               avg_loss=avg_train_loss,
                               cur_model_num=model_num)
             self.pre_model = copy.deepcopy(self.cur_model)
-            # self.save(model=self.pre_model,
-            #           epoch=model_num,
-            #           avg_loss=-1,
-            #           model_name_prefix='pre_model_')
             pre_err_index = err_index
             err_index = self.get_err_index(self.train_data[err_index, :], model=self.cur_model)
             err_index = pre_err_index[err_index]
