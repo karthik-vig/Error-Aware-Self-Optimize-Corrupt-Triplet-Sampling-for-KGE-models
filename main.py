@@ -58,9 +58,13 @@ class LoadMetaDataHandling:
         choose_exp = input('Run a new experiment (y), or continue with an existing one (n) ?: ')
         if choose_exp == 'y':
             meta_data, exp_dir_name, transe_model = self.create_exp(folder=folder)
+            torch.manual_seed(meta_data['global']['seed'])
+            torch.cuda.manual_seed_all(meta_data['global']['seed'])
             return meta_data, exp_dir_name, transe_model, self.train_dataset, self.val_dataset, self.test_dataset
         elif choose_exp == 'n':
             meta_data, exp_dir_name, transe_model = self.resume_exp(folder=folder)
+            torch.manual_seed(meta_data['global']['seed'])
+            torch.cuda.manual_seed_all(meta_data['global']['seed'])
             return meta_data, exp_dir_name, transe_model, self.train_dataset, self.val_dataset, self.test_dataset
 
     def get_latest_exp(self, folder):
@@ -91,7 +95,9 @@ class LoadMetaDataHandling:
                                 'l2': float(input('L2 Weight Decay: ')),
                                 'batch size': int(input('Batch Size: ')),
                                 'latest epoch': 0,
-                                'total epoch': int(input('total number of epochs: '))},
+                                'total epoch': int(input('total number of epochs: ')),
+                                'description': input('Enter a brief description about this experiment: ')
+                                },
                      'local': {}
                      }
         with open(exp_dir_name + '/' + 'meta_data.json', 'w+') as json_file:
