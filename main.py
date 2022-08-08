@@ -42,7 +42,8 @@ class LoadMetaDataHandling:
         print('Experiment List: ')
         # print(folder)
         # print([dir_name for dir_name in os.listdir('./' + folder + '/')])
-        for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if os.path.isdir('./' + folder + '/' + dir_name)]:
+        for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if
+                    os.path.isdir('./' + folder + '/' + dir_name)]:
             print(exp)
         select_exp_num = input('Choose a Exp. number from list: ')
         exp_dir_name = folder + '/' + 'exp_' + str(select_exp_num)
@@ -68,7 +69,8 @@ class LoadMetaDataHandling:
             return meta_data, exp_dir_name, transe_model, self.train_dataset, self.val_dataset, self.test_dataset
 
     def get_latest_exp(self, folder):
-        exist_dir = [dir_name for dir_name in os.listdir('./' + folder + '/') if os.path.isdir('./' + folder + '/' + dir_name)]
+        exist_dir = [dir_name for dir_name in os.listdir('./' + folder + '/') if
+                     os.path.isdir('./' + folder + '/' + dir_name)]
         if len(exist_dir) != 0:
             file_numbers = [int(re.findall('\d+', dir_name)[0]) for dir_name in exist_dir]
             if len(file_numbers) != 0:
@@ -151,6 +153,17 @@ class LoadMetaDataHandling:
     def get_data(self):
         return self.train_dataset, self.val_dataset, self.test_dataset
 
+    def meta_data_add_field(self, exp_dir_name, **kwargs):
+        with open(exp_dir_name + '/' + 'meta_data.json', 'r+') as json_file:
+            meta_data = json.load(json_file)
+            for key, value in kwargs.items():
+                meta_data['global'][str(key)] = value
+            json_file.seek(0)
+            json.dump(meta_data, json_file, indent=4)
+            json_file.truncate()
+            json_file.close()
+            return meta_data
+
 
 # # set transe model paratmeters:
 # device = 'cuda'
@@ -176,7 +189,7 @@ class LoadMetaDataHandling:
 
 def main():
     folder_list = ['transe_original', 'transe_selftrain_type_1', 'transe_selftrain_type_2']
-    dataset_num_map = {'FB15k':'1', 'FB15k237':'2', 'WN18':'3'}
+    dataset_num_map = {'FB15k': '1', 'FB15k237': '2', 'WN18': '3'}
     load_data = LoadMetaDataHandling(folder_list=folder_list, dataset_num_map=dataset_num_map)
 
     select_train_model = input('''
@@ -250,15 +263,15 @@ def main():
                 print('Done!\nModel being evaluated: ', evaluate_model + 'transe_' + eva_model_num + '.pt')
                 # specify the values for evaluation:
                 eva_obj = Evaluation(data=val_dataset,
-                                    model=transe_model,
-                                    num_entity=meta_data['global']['num entity'],
-                                    device=meta_data['global']['device'])
+                                     model=transe_model,
+                                     num_entity=meta_data['global']['num entity'],
+                                     device=meta_data['global']['device'])
                 # Evaluate TransE model:
                 mr, mrr, hits_at_10 = eva_obj.evaluate_model()
                 # store the values in meta data file for that model
-                meta_data['local']['transe_'+eva_model_num]['MR'] = float(mr)
-                meta_data['local']['transe_'+eva_model_num]['MRR'] = float(mrr)
-                meta_data['local']['transe_'+eva_model_num]['Hits@10'] = float(hits_at_10)
+                meta_data['local']['transe_' + eva_model_num]['MR'] = float(mr)
+                meta_data['local']['transe_' + eva_model_num]['MRR'] = float(mrr)
+                meta_data['local']['transe_' + eva_model_num]['Hits@10'] = float(hits_at_10)
             json_file.seek(0)
             json.dump(meta_data, json_file, indent=4)
             json_file.truncate()
@@ -278,15 +291,15 @@ def main():
                                     weight_decay=meta_data['global']['l2'])
         # setup to train the model:
         self_train_type1 = TransEBoost(start_epoch=meta_data['global']['latest epoch'] + 1,
-                                end_epoch=meta_data['global']['total epoch'],
-                                train_data=train_dataset,
-                                seed=meta_data['global']['seed'],
-                                device=meta_data['global']['device'],
-                                batch_size=meta_data['global']['batch size'],
-                                model=transe_model,
-                                optimizer=optimizer,
-                                num_entity=meta_data['global']['num entity'],
-                                folder=exp_dir_name)
+                                       end_epoch=meta_data['global']['total epoch'],
+                                       train_data=train_dataset,
+                                       seed=meta_data['global']['seed'],
+                                       device=meta_data['global']['device'],
+                                       batch_size=meta_data['global']['batch size'],
+                                       model=transe_model,
+                                       optimizer=optimizer,
+                                       num_entity=meta_data['global']['num entity'],
+                                       folder=exp_dir_name)
         # save the meta data:
         # save_boosted_meta(dataset_name=dataset_name,
         #                   num_entity=num_entity,
@@ -295,27 +308,47 @@ def main():
         # train the model:
         self_train_type1.train()
 
-    # elif select_train_model == '4':
-    #     transe_model = torch.load('transe_conorg_models/transe_org_model_1.pt')
-    #     # Create the optimizer:
-    #     optimizer = torch.optim.SGD(transe_model.parameters(),
-    #                                 lr=lr,
-    #                                 weight_decay=weight_decay)
-    #     # setup the transe boost 2
-    #     boost2_obj = TransEBoost2(pre_model=transe_model,
-    #                               cur_model=transe_model,
-    #                               train_data=train_dataset,
-    #                               start_epoch=1,
-    #                               end_epoch=10,
-    #                               seed=seed,
-    #                               device=device,
-    #                               batch_size=batch_size,
-    #                               start_model=1,
-    #                               end_model=5,
-    #                               optimizer=optimizer,
-    #                               num_entity=num_entity)
-    #     # train:
-    #     boost2_obj.train()
+    elif select_train_model == '4':
+        meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[2])
+        # Check if transe_model is a dict or not:
+        if str(type(transe_model)) != "<class 'dict'>":
+            temp = transe_model
+            transe_model = {'pre_model': temp,
+                            'cur_model': temp
+                            }
+        if meta_data['global']['latest epoch'] == 0:
+            num_model_train = int(input('Enter number of models to train: '))
+            meta_data = load_data.meta_data_add_field(exp_dir_name=exp_dir_name,
+                                                      cur_model_num=1,
+                                                      num_model_train=num_model_train)
+            start_epoch = 1
+        else:
+            start_epoch = meta_data['global']['latest epoch'] % meta_data['global']['total epoch']
+            if start_epoch == 0:
+                start_epoch = 1
+            else:
+                start_epoch += 1
+        # Create the optimizer:
+        optimizer = torch.optim.SGD(transe_model['cur_model'].parameters(),
+                                    lr=meta_data['global']['lr'],
+                                    weight_decay=meta_data['global']['l2'])
+        # setup the transe boost 2
+        boost2_obj = TransEBoost2(pre_model=transe_model['pre_model'],
+                                  cur_model=transe_model['cur_model'],
+                                  train_data=train_dataset,
+                                  start_epoch=start_epoch,
+                                  end_epoch=meta_data['global']['total epoch'],
+                                  total_epoch=meta_data['global']['latest epoch'],
+                                  seed=meta_data['global']['seed'],
+                                  device=meta_data['global']['device'],
+                                  batch_size=meta_data['global']['batch size'],
+                                  start_model=meta_data['global']['cur_model_num'],
+                                  end_model=meta_data['global']['num_model_train'],
+                                  optimizer=optimizer,
+                                  num_entity=meta_data['global']['num entity'],
+                                  folder=exp_dir_name)
+        # train:
+        boost2_obj.train()
 
     elif select_train_model == '5':
         return 0

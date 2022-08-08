@@ -122,8 +122,8 @@ class TransEBoost(SaveData):
 
 
 class TransEBoost2(SaveData):
-    def __init__(self, pre_model, cur_model, train_data, start_epoch, end_epoch, seed, device, batch_size, start_model,
-                 end_model, optimizer, num_entity, folder, save_epoch=1):
+    def __init__(self, pre_model, cur_model, train_data, start_epoch, end_epoch, total_epoch, seed, device, batch_size,
+                 start_model, end_model, optimizer, num_entity, folder, save_epoch=1):
         self.pre_model = pre_model
         self.cur_model = cur_model
         self.train_data = train_data
@@ -138,6 +138,7 @@ class TransEBoost2(SaveData):
         self.num_entity = num_entity
         self.folder = folder
         self.save_epoch = save_epoch
+        self.total_epoch = total_epoch
         self.tail_dict = {}
         self.head_dict = {}
         torch.manual_seed(self.seed)
@@ -232,12 +233,10 @@ class TransEBoost2(SaveData):
     def train(self):
         print('Starting TransEBoost2 training:')
         err_index = self.err_index
-        total_epoch = 0
         for model_num in range(self.start_model, self.end_model):
             for epoch in range(self.start_epoch, self.end_epoch + 1):
                 print('Starting epoch: ', epoch)
                 avg_train_loss = 0
-                total_epoch += 1
                 for sample_batch in self.tensor_to_dataloader(self.train_data[err_index, :]):
                     sample_batch = sample_batch[0].to(self.device, non_blocking=True)
                     self.evaluate(data=sample_batch, model=self.pre_model)
@@ -250,15 +249,19 @@ class TransEBoost2(SaveData):
                     self.optimizer.step()
                 print(epoch, 'boost epoch is done')
                 print('Average Training loss is: ', avg_train_loss / self.train_data.shape[0])
-                if total_epoch % self.save_epoch == 0:
-                    self.save(model=self.cur_model,
-                              epoch=total_epoch,
+                self.total_epoch += 1
+                if self.total_epoch % self.save_epoch == 0:
+                    model_dict = {'pre_model': self.pre_model,
+                                  'cur_model': self.cur_model
+                                  }
+                    self.save(model=model_dict,
+                              epoch=self.total_epoch,
                               avg_loss=avg_train_loss)
             self.pre_model = copy.deepcopy(self.cur_model)
-            self.save(model=self.pre_model,
-                      epoch=model_num,
-                      avg_loss=-1,
-                      model_name_prefix='pre_model_')
+            # self.save(model=self.pre_model,
+            #           epoch=model_num,
+            #           avg_loss=-1,
+            #           model_name_prefix='pre_model_')
             pre_err_index = err_index
             err_index = self.get_err_index(self.train_data[err_index, :], model=self.cur_model)
             err_index = pre_err_index[err_index]
