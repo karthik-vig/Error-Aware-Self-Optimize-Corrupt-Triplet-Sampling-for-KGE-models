@@ -233,7 +233,7 @@ class TransEBoost2(SaveData):
     def train(self):
         print('Starting TransEBoost2 training:')
         err_index = self.err_index
-        for model_num in range(self.start_model, self.end_model):
+        for model_num in range(self.start_model, self.end_model + 1):
             for epoch in range(self.start_epoch, self.end_epoch + 1):
                 print('Starting epoch: ', epoch)
                 avg_train_loss = 0
