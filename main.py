@@ -289,7 +289,7 @@ def main():
         if meta_data['global']['latest epoch'] == 0:
             num_model_train = int(input('Enter number of models to train: '))
             meta_data = load_data.meta_data_add_field(exp_dir_name=exp_dir_name,
-                                                      cur_model_num=1,
+                                                      # cur_model_num=1,
                                                       num_model_train=num_model_train)
             start_epoch = 1
             start_model = 1
