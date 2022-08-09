@@ -79,7 +79,7 @@ class TransETrain(SaveData):
             avg_train_loss = avg_train_loss / self.train_dataset_len
             print('Average Training loss is: ', avg_train_loss)
             if epoch % self.save_epoch == 0:
-                self.save(model=self.model,
+                self.save(model={'cur_model': self.model},
                           epoch=epoch,
                           avg_loss=avg_train_loss)
 

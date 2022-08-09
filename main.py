@@ -96,12 +96,13 @@ class LoadMetaDataHandling:
         if transe_model_select == 'y':
             # create a new transe model:
             print('Creating a new TransE model: ')
-            transe_model = TransE(device=meta_data['global']['device'],
-                                  num_entity=meta_data['global']['num entity'],
-                                  num_relation=meta_data['global']['num relation'],
-                                  emb_dim=meta_data['global']['emb dim'],
-                                  gamma=meta_data['global']['gamma'],
-                                  seed=meta_data['global']['seed'])
+            transe_model = {'cur_model': TransE(device=meta_data['global']['device'],
+                                                num_entity=meta_data['global']['num entity'],
+                                                num_relation=meta_data['global']['num relation'],
+                                                emb_dim=meta_data['global']['emb dim'],
+                                                gamma=meta_data['global']['gamma'],
+                                                seed=meta_data['global']['seed'])
+                            }
             print('Done!!')
             # Set the start model choice in meta-data:
             meta_data['global']['start model'] = 'new TransE model'
@@ -118,7 +119,7 @@ class LoadMetaDataHandling:
     def get_model(self):
         print('Select a folder: ')
         for index, folder in enumerate(self.folder_list):
-            print(str(index + 1)+') '+folder)
+            print(str(index + 1) + ') ' + folder)
         folder_choice = input('Enter a number: ')
         exp_choice = input('Enter a exp. number: ')
         model_choice = input('Enter a model number: ')
@@ -191,14 +192,14 @@ def main():
         # Get the transe model:
         meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[0])
         # Create the optimizer:
-        optimizer = torch.optim.SGD(transe_model.parameters(),
+        optimizer = torch.optim.SGD(transe_model['cur_model'].parameters(),
                                     lr=meta_data['global']['lr'],
                                     weight_decay=meta_data['global']['l2'])
         # Train the model:
         transe_model_train = TransETrain(train_dataset=train_dataset,
                                          batch_size=meta_data['global']['batch size'],
                                          num_entity=meta_data['global']['num entity'],
-                                         model=transe_model,
+                                         model=transe_model['cur_model'],
                                          device=meta_data['global']['device'],
                                          optimizer=optimizer,
                                          start_epoch=meta_data['global']['latest epoch'] + 1,
@@ -241,7 +242,7 @@ def main():
                 print('Done!\nModel being evaluated: ', evaluate_model + 'transe_' + eva_model_num + '.pt')
                 # specify the values for evaluation:
                 eva_obj = Evaluation(data=val_dataset,
-                                     model=transe_model,
+                                     model=transe_model['cur_model'],
                                      num_entity=meta_data['global']['num entity'],
                                      device=meta_data['global']['device'])
                 # Evaluate TransE model:
@@ -258,7 +259,7 @@ def main():
     elif select_train_model == '3':
         meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[1])
         # Create the optimizer:
-        optimizer = torch.optim.SGD(transe_model.parameters(),
+        optimizer = torch.optim.SGD(transe_model['cur_model'].parameters(),
                                     lr=meta_data['global']['lr'],
                                     weight_decay=meta_data['global']['l2'])
         # setup to train the model:
@@ -268,7 +269,7 @@ def main():
                                        seed=meta_data['global']['seed'],
                                        device=meta_data['global']['device'],
                                        batch_size=meta_data['global']['batch size'],
-                                       model=transe_model,
+                                       model=transe_model['cur_model'],
                                        optimizer=optimizer,
                                        num_entity=meta_data['global']['num entity'],
                                        folder=exp_dir_name)
@@ -319,6 +320,7 @@ def main():
 
     elif select_train_model == '5':
         return 0
+
 
 if __name__ == '__main__':
     main()
