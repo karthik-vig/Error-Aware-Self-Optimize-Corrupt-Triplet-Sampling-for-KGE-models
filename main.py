@@ -292,8 +292,10 @@ def main():
                                                       cur_model_num=1,
                                                       num_model_train=num_model_train)
             start_epoch = 1
+            start_model = 1
         else:
             start_epoch = meta_data['global']['latest epoch'] % meta_data['global']['total epoch']
+            start_model = int(meta_data['global']['latest epoch'] / meta_data['global']['total epoch']) + 1
             if start_epoch == 0:
                 start_epoch = 1
             else:
@@ -312,7 +314,7 @@ def main():
                                   seed=meta_data['global']['seed'],
                                   device=meta_data['global']['device'],
                                   batch_size=meta_data['global']['batch size'],
-                                  start_model=meta_data['global']['cur_model_num'],
+                                  start_model=start_model,
                                   end_model=meta_data['global']['num_model_train'],
                                   optimizer=optimizer,
                                   num_entity=meta_data['global']['num entity'],
