@@ -50,14 +50,11 @@ class LoadMetaDataHandling:
         choose_exp = input('Run a new experiment (y), or continue with an existing one (n) ?: ')
         if choose_exp == 'y':
             meta_data, exp_dir_name, transe_model = self.create_exp(folder=folder)
-            torch.manual_seed(meta_data['global']['seed'])
-            torch.cuda.manual_seed_all(meta_data['global']['seed'])
-            return meta_data, exp_dir_name, transe_model, self.train_dataset, self.val_dataset, self.test_dataset
-        elif choose_exp == 'n':
+        else:
             meta_data, exp_dir_name, transe_model = self.resume_exp(folder=folder)
-            torch.manual_seed(meta_data['global']['seed'])
-            torch.cuda.manual_seed_all(meta_data['global']['seed'])
-            return meta_data, exp_dir_name, transe_model, self.train_dataset, self.val_dataset, self.test_dataset
+        torch.manual_seed(meta_data['global']['seed'])
+        torch.cuda.manual_seed_all(meta_data['global']['seed'])
+        return meta_data, exp_dir_name, transe_model, self.train_dataset, self.val_dataset, self.test_dataset
 
     def get_latest_exp(self, folder):
         exist_dir = [dir_name for dir_name in os.listdir('./' + folder + '/') if
@@ -89,23 +86,46 @@ class LoadMetaDataHandling:
                                 'batch size': int(input('Batch Size: ')),
                                 'latest epoch': 0,
                                 'total epoch': int(input('total number of epochs: ')),
+                                'start model': None,
                                 'description': input('Enter a brief description about this experiment: ')
                                 },
                      'local': {}
                      }
+        # Choose the source of transe model to start training from:
+        transe_model_select = input('Create a new model (y) or use a existing model (n): ')
+        if transe_model_select == 'y':
+            # create a new transe model:
+            print('Creating a new TransE model: ')
+            transe_model = TransE(device=meta_data['global']['device'],
+                                  num_entity=meta_data['global']['num entity'],
+                                  num_relation=meta_data['global']['num relation'],
+                                  emb_dim=meta_data['global']['emb dim'],
+                                  gamma=meta_data['global']['gamma'],
+                                  seed=meta_data['global']['seed'])
+            print('Done!!')
+            # Set the start model choice in meta-data:
+            meta_data['global']['start model'] = 'new TransE model'
+        else:
+            transe_model, model_path = self.get_model()
+            # Set the start model choice in meta-data:
+            meta_data['global']['start model'] = model_path
+        # Save the meta-data to disk:
         with open(exp_dir_name + '/' + 'meta_data.json', 'w+') as json_file:
             json.dump(meta_data, json_file, indent=4)
             json_file.close()
-        # create a new transe model:
-        print('Creating a new TransE model: ')
-        transe_model = TransE(device=meta_data['global']['device'],
-                              num_entity=meta_data['global']['num entity'],
-                              num_relation=meta_data['global']['num relation'],
-                              emb_dim=meta_data['global']['emb dim'],
-                              gamma=meta_data['global']['gamma'],
-                              seed=meta_data['global']['seed'])
-        print('Done!!')
         return meta_data, exp_dir_name, transe_model
+
+    def get_model(self):
+        print('Select a folder: ')
+        for index, folder in enumerate(self.folder_list):
+            print(str(index + 1)+') '+folder)
+        folder_choice = input('Enter a number: ')
+        exp_choice = input('Enter a exp. number: ')
+        model_choice = input('Enter a model number: ')
+        folder = self.folder_list[int(folder_choice) - 1]
+        model_path = folder + '/' + 'exp_' + exp_choice + '/' + 'transe_' + model_choice + '.pt'
+        transe_model = torch.load(model_path)
+        return transe_model, model_path
 
     def get_dataset(self, automatic_input=None):
         if automatic_input == None:
