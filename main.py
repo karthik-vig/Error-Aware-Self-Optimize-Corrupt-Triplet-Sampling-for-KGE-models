@@ -284,6 +284,8 @@ def main():
             transe_model = {'pre_model': temp,
                             'cur_model': temp
                             }
+        elif 'pre_model' not in  transe_model.keys():
+            transe_model['pre_model'] = transe_model['cur_model']
         if meta_data['global']['latest epoch'] == 0:
             num_model_train = int(input('Enter number of models to train: '))
             meta_data = load_data.meta_data_add_field(exp_dir_name=exp_dir_name,
