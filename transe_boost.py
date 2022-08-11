@@ -1,4 +1,5 @@
 import copy
+import time
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -103,6 +104,7 @@ class TransEBoost(SaveData):
         for epoch in range(self.start_epoch, self.end_epoch + 1):
             print('Starting epoch: ', epoch)
             avg_train_loss = 0
+            start_t = time.time()
             for sample_batch in self.tensor_to_dataloader(self.train_data):
                 sample_batch = sample_batch[0].to(self.device, non_blocking=True)
                 self.evaluate(data=sample_batch)
@@ -113,8 +115,11 @@ class TransEBoost(SaveData):
                 loss.mean().backward()
                 self.optimizer.step()
             print(epoch, 'boost epoch is done')
+            end_t = time.time()
+            time_taken = float(end_t - start_t) / 60.0
             avg_train_loss = avg_train_loss / self.train_data.shape[0]
             print('Average Training loss is: ', avg_train_loss)
+            print('Time taken for this epoch is (in mins.) : ', time_taken)
             if epoch % self.save_epoch == 0:
                 self.save(model={'cur_model': self.model},
                           epoch=epoch,
@@ -236,6 +241,7 @@ class TransEBoost2(SaveData):
         for model_num in range(self.start_model, self.end_model + 1):
             for epoch in range(self.start_epoch, self.end_epoch + 1):
                 print('Starting epoch: ', epoch)
+                start_t = time.time()
                 avg_train_loss = 0
                 for sample_batch in self.tensor_to_dataloader(self.train_data[err_index, :]):
                     sample_batch = sample_batch[0].to(self.device, non_blocking=True)
@@ -248,8 +254,11 @@ class TransEBoost2(SaveData):
                     loss.mean().backward()
                     self.optimizer.step()
                 print(epoch, 'boost epoch is done')
+                end_t = time.time()
                 avg_train_loss = avg_train_loss / self.train_data.shape[0]
+                time_taken = float(end_t - start_t) / 60.0
                 print('Average Training loss is: ', avg_train_loss)
+                print('Time taken for this epoch is (in mins.) : ', time_taken)
                 self.total_epoch += 1
                 if self.total_epoch % self.save_epoch == 0:
                     model_dict = {'pre_model': self.pre_model,
