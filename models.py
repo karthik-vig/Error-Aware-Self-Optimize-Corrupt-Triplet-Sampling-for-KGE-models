@@ -45,3 +45,5 @@ class TransE(nn.Module):
         del score
         return sorted_score_index
 
+    def get_embeddings(self):
+        return self.entity_emb.weight.data, self.relation_emb.weight.data

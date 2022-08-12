@@ -3,6 +3,7 @@ import os
 import re
 import torch
 import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
 from pykeen.datasets import FB15k237, FB15k, WN18
 
 from models import TransE
@@ -287,6 +288,11 @@ class Draw:
                           title=title,
                           ylabel='Training Loss',
                           en_save=en_save)
+
+    def plot_tsne(self, model_path):
+        transe_model = torch.load(model_path)
+        entity_emb, relation_emb = transe_model.get_embeddings()
+        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(entity_emb)
 
 class HyperParameterOptim:
     def __init__(self):
