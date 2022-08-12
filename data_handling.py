@@ -43,6 +43,9 @@ class LoadMetaDataHandling:
         self.num_relation = None
         self.folder_list = folder_list
         self.dataset_num_map = dataset_num_map
+        self.check_folder()
+
+    def check_folder(self):
         # check if the necessary folders exist
         exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name) if
                      dir_name in self.folder_list]
@@ -218,13 +221,20 @@ class LoadMetaDataHandling:
             return meta_data
 
 class Draw:
-    def __init__(self):
+    def __init__(self, fig_save_folder=''):
         self.metric_ret_map = {'Training Loss':0,
                                'MR':1,
                                'MRR':2,
                                'Hits@10':3,
                                'num_epoch':4
                                }
+        self.fig_save_folder = fig_save_folder + '/'
+        self.check_folder(folder=fig_save_folder)
+
+    def check_folder(self, folder):
+        exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name)]
+        if folder not in exist_dir:
+            os.mkdir(folder)
 
     def meta_data_to_list(self, exp_dir_name):
         with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
@@ -238,7 +248,8 @@ class Draw:
             json_file.close()
         return train_loss, mr_val, mrr_val, hits_at_10_val, num_epoch
 
-    def plot_metrics(self, met_dict, title, ylabel):
+    def plot_metrics(self, met_dict, title, ylabel, en_save):
+        plt.close()
         plt.title(title)
         plt.xlabel('Epochs')
         plt.ylabel(ylabel)
@@ -248,27 +259,34 @@ class Draw:
             metric = all_metrics[self.metric_ret_map[ylabel]]
             plt.plot(list(range(1, num_epoch+1)), metric, label=exp)
         plt.legend(loc='center right')
-        plt.show()
+        if en_save:
+            plt.savefig(self.fig_save_folder + title + ' ' + ylabel)
+        else:
+            plt.show()
 
-    def plot_mr(self, mr_dict, title):
+    def plot_mr(self, mr_dict, title, en_save=False):
         self.plot_metrics(met_dict=mr_dict,
                           title=title,
-                          ylabel='MR')
+                          ylabel='MR',
+                          en_save=en_save)
 
-    def plot_mrr(self, mrr_dict, title):
+    def plot_mrr(self, mrr_dict, title, en_save=False):
         self.plot_metrics(met_dict=mrr_dict,
                           title=title,
-                          ylabel='MRR')
+                          ylabel='MRR',
+                          en_save=en_save)
 
-    def plot_hits(self, hits_dict, title):
+    def plot_hits(self, hits_dict, title, en_save=False):
         self.plot_metrics(met_dict=hits_dict,
                           title=title,
-                          ylabel='Hits@10')
+                          ylabel='Hits@10',
+                          en_save=en_save)
 
-    def plot_tr_loss(self, tr_dict, title):
+    def plot_tr_loss(self, tr_dict, title, en_save=False):
         self.plot_metrics(met_dict=tr_dict,
                           title=title,
-                          ylabel='Training Loss')
+                          ylabel='Training Loss',
+                          en_save=en_save)
 
 class HyperParameterOptim:
     def __init__(self):

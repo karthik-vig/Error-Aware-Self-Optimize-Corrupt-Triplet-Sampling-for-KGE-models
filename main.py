@@ -9,6 +9,7 @@ from data_handling import LoadMetaDataHandling, Draw
 def main():
     folder_list = ['transe_original', 'transe_selftrain_type_1', 'transe_selftrain_type_2']
     dataset_num_map = {'FB15k': '1', 'FB15k237': '2', 'WN18': '3'}
+    fig_save_folder = 'figures'
     load_data = LoadMetaDataHandling(folder_list=folder_list, dataset_num_map=dataset_num_map)
 
     select_option = input('''
@@ -147,7 +148,13 @@ def main():
         boost2_obj.train()
 
     elif select_option == '5':
-        draw_obj = Draw()
+        draw_obj = Draw(fig_save_folder=fig_save_folder)
+        save_fig = input('Enable Save Figure? (y/n): ')
+        if save_fig == 'y':
+            save_cond = True
+        else:
+            save_cond = False
+        fig_title = input('Enter a title for the figures: ')
         num_model_compare = int(input('Enter number of models to display in a graph: '))
         draw_model_met_dict = {}
         for model_num in range(num_model_compare):
@@ -156,10 +163,10 @@ def main():
             exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
             model_name = input('Enter model name: ')
             draw_model_met_dict[model_name] = exp_dir_name
-        draw_obj.plot_mr(mr_dict=draw_model_met_dict, title='')
-        draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title='')
-        draw_obj.plot_hits(hits_dict=draw_model_met_dict, title='')
-        draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title='')
+        draw_obj.plot_mr(mr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
+        draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
+        draw_obj.plot_hits(hits_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
+        draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
 
     elif select_option == '6':
         pass
