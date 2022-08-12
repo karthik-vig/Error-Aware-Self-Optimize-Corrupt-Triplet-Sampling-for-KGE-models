@@ -2,6 +2,7 @@ import json
 import os
 import re
 import torch
+import matplotlib.pyplot as plt
 from pykeen.datasets import FB15k237, FB15k, WN18
 
 from models import TransE
@@ -208,21 +209,56 @@ class LoadMetaDataHandling:
 
 class Draw:
     def __init__(self):
-        pass
+        self.metric_ret_map = {'Training Loss':0,
+                               'MR':1,
+                               'MRR':2,
+                               'Hits@10':3,
+                               'num_epoch':4
+                               }
 
     def meta_data_to_list(self, exp_dir_name):
         with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
             meta_data = json.load(json_file)
             all_metrics = [metrics for metrics in meta_data['local'].values()]
+            num_epoch = len(all_metrics)
             train_loss = [float(tr_loss['Average Training Loss']) for tr_loss in all_metrics]
             mr_val = [float(mr['MR']) for mr in all_metrics]
             mrr_val = [float(mrr['MRR']) for mrr in all_metrics]
             hits_at_10_val = [float(hits['Hits@10']) for hits in all_metrics]
             json_file.close()
-        return train_loss, mr_val, mrr_val, hits_at_10_val
+        return train_loss, mr_val, mrr_val, hits_at_10_val, num_epoch
 
-    def plot_metrics(self):
-        pass
+    def plot_metrics(self, met_dict, title, ylabel):
+        plt.title(title)
+        plt.xlabel('Epochs')
+        plt.ylabel(ylabel)
+        for exp in met_dict.keys():
+            all_metrics = self.meta_data_to_list(exp_dir_name=met_dict[exp])
+            num_epoch = all_metrics[self.metric_ret_map['num_epoch']]
+            metric = all_metrics[self.metric_ret_map[ylabel]]
+            plt.plot(list(range(1, num_epoch+1)), metric, label=exp)
+        plt.legend(loc='center right')
+        plt.show()
+
+    def plot_mr(self, mr_dict, title):
+        self.plot_metrics(met_dict=mr_dict,
+                          title=title,
+                          ylabel='MR')
+
+    def plot_mrr(self, mrr_dict, title):
+        self.plot_metrics(met_dict=mrr_dict,
+                          title=title,
+                          ylabel='MRR')
+
+    def plot_hits(self, hits_dict, title):
+        self.plot_metrics(met_dict=hits_dict,
+                          title=title,
+                          ylabel='Hits@10')
+
+    def plot_tr_loss(self, tr_dict, title):
+        self.plot_metrics(met_dict=tr_dict,
+                          title=title,
+                          ylabel='Training Loss')
 
 class HyperParameterOptim:
     def __init__(self):

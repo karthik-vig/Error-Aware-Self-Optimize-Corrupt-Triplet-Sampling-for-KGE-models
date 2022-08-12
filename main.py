@@ -9,7 +9,7 @@ import torch
 #from models import TransE
 from train_and_evaluate import TransETrain, Evaluation
 from transe_boost import TransEBoost, TransEBoost2
-from data_handling import LoadMetaDataHandling
+from data_handling import LoadMetaDataHandling, Draw
 
 
 def main():
@@ -22,7 +22,8 @@ def main():
                                \n2) Evaluate a model? 
                                \n3) Training a self-training type 1 model?
                                \n4) Training a self-training type 2 model?
-                               \n5) Exit (any other input will be lead to exit)
+                               \n5) Draw graphs for evaluated metrics?
+                               \n6) Exit (any other input will be lead to exit)
                                \n Enter (1, 2, 3, 4, 5): ''')
 
     if select_train_model == '1':
@@ -161,6 +162,17 @@ def main():
                                   folder=exp_dir_name)
         # train:
         boost2_obj.train()
+
+    elif select_train_model == '5':
+        draw_obj = Draw()
+        draw_obj.plot_mr(mr_dict={'exp1':'transe_selftrain_type_1/exp_1/',
+                                  'exp2':'transe_selftrain_type_1/exp_2/'}, title='MR Test')
+        draw_obj.plot_mrr(mrr_dict={'exp1':'transe_selftrain_type_1/exp_1/',
+                                  'exp2':'transe_selftrain_type_1/exp_2/'}, title='MRR Test')
+        draw_obj.plot_hits(hits_dict={'exp1':'transe_selftrain_type_1/exp_1/',
+                                  'exp2':'transe_selftrain_type_1/exp_2/'}, title='Hits Test')
+        draw_obj.plot_tr_loss(tr_dict={'exp1': 'transe_selftrain_type_1/exp_1/',
+                                      'exp2': 'transe_selftrain_type_1/exp_2/'}, title='tr loss Test')
 
     else:
         return 0
