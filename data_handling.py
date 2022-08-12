@@ -28,18 +28,30 @@ class LoadMetaDataHandling:
     def dataset_name_to_number(self, dataset_name):
         return self.dataset_num_map[dataset_name]
 
-    def resume_exp(self, folder):
+    def select_exp(self, folder):
         print('Experiment List: ')
         for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if
                     os.path.isdir('./' + folder + '/' + dir_name)]:
             print(exp)
         select_exp_num = input('Choose a Exp. number from list: ')
+        return select_exp_num
+
+    def select_model_num(self, exp_dir_name):
+        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir(exp_dir_name) if '.pt' in model_name]
+        start_model_num = min(model_num_list)
+        end_model_num = max(model_num_list)
+        print('Model number range is: ', start_model_num, ' to ', end_model_num)
+        select_model_num = list(map(int, input('Enter a model number range: ').split()))
+        return select_model_num
+
+    def resume_exp(self, folder):
+        select_exp_num = self.select_exp(folder=folder)
         exp_dir_name = folder + '/' + 'exp_' + str(select_exp_num)
         with open(exp_dir_name + '/' + 'meta_data.json', 'r') as json_file:
             meta_data = json.load(json_file)
             json_file.close()
         automatic_input = self.dataset_name_to_number(dataset_name=meta_data['global']['dataset name'])
-        self.get_dataset(automatic_input=automatic_input)
+        self.choose_dataset(automatic_input=automatic_input)
         transe_model = torch.load(exp_dir_name + '/' + 'transe_' + str(meta_data['global']['latest epoch']) + '.pt')
         return meta_data, exp_dir_name, transe_model
 
@@ -70,7 +82,7 @@ class LoadMetaDataHandling:
         new_exp_num = self.get_latest_exp(folder) + 1
         exp_dir_name = folder + '/' + 'exp_' + str(new_exp_num)
         os.mkdir(exp_dir_name)
-        self.get_dataset()
+        self.choose_dataset()
         meta_data = {'global': {'device': input('Device: '),
                                 'seed': int(input('Seed: ')),
                                 'dataset name': self.dataset_name,
@@ -125,9 +137,9 @@ class LoadMetaDataHandling:
         transe_model = torch.load(model_path)
         return transe_model, model_path
 
-    def get_dataset(self, automatic_input=None):
+    def choose_dataset(self, automatic_input=None):
         if automatic_input == None:
-            select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit\nEnter 1,2,3 or 4:''')
+            select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
         else:
             select_dataset = automatic_input
         if select_dataset == '1':
@@ -139,8 +151,6 @@ class LoadMetaDataHandling:
         elif select_dataset == '3':
             dataset = WN18()
             self.dataset_name = 'WN18'
-        elif select_dataset == '4':
-            return
         else:
             return
         # assign the values
@@ -157,7 +167,7 @@ class LoadMetaDataHandling:
         print('Number of relations: ', self.num_relation)
         print('Dataset Name: ', self.dataset_name)
 
-    def get_data(self):
+    def get_dataset(self):
         return self.train_dataset, self.val_dataset, self.test_dataset
 
     def meta_data_add_field(self, exp_dir_name, **kwargs):
@@ -172,5 +182,9 @@ class LoadMetaDataHandling:
             return meta_data
 
 class Draw:
+    def __init__(self):
+        pass
+
+class HyperParameterOptim:
     def __init__(self):
         pass

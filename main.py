@@ -1,6 +1,7 @@
 import json
 # import os
 # import re
+import sys
 
 import torch
 #from pykeen.datasets import FB15k237, FB15k, WN18
@@ -21,7 +22,7 @@ def main():
                                \n2) Evaluate a model? 
                                \n3) Training a self-training type 1 model?
                                \n4) Training a self-training type 2 model?
-                               \n5) Exit 
+                               \n5) Exit (any other input will be lead to exit)
                                \n Enter (1, 2, 3, 4, 5): ''')
 
     if select_train_model == '1':
@@ -50,22 +51,25 @@ def main():
                                   1) original model\n
                                   2) self training type 1\n
                                   3) self training type 2\n
+                                  4) Exit (any other input will lead to exit)
                                   Enter (1,2,3):''')
-        select_exp_num = input('Enter the exp. number: ')
-        select_eva_model_num = list(map(int, input('''Enter range of models to be evaluated: ''').split()))
         if select_eva_model == '1':
-            evaluate_model = folder_list[0] + '/'
+            evaluate_model = folder_list[0]
         elif select_eva_model == '2':
-            evaluate_model = folder_list[1] + '/'
+            evaluate_model = folder_list[1]
         elif select_eva_model == '3':
-            evaluate_model = folder_list[2] + '/'
-        evaluate_model += 'exp_' + select_exp_num + '/'
+            evaluate_model = folder_list[2]
+        else:
+            return 0
+        select_exp_num = load_data.select_exp(folder=evaluate_model)
+        evaluate_model += '/' + 'exp_' + select_exp_num + '/'
+        select_eva_model_num = load_data.select_model_num(exp_dir_name=evaluate_model)
         with open(evaluate_model + 'meta_data.json', 'r+') as json_file:
             meta_data = json.load(json_file)
             # get the appropriate dataset to evaluate the model
             automatic_input = load_data.dataset_name_to_number(dataset_name=meta_data['global']['dataset name'])
-            load_data.get_dataset(automatic_input=automatic_input)
-            train_dataset, val_dataset, test_dataset = load_data.get_data()
+            load_data.choose_dataset(automatic_input=automatic_input)
+            train_dataset, val_dataset, test_dataset = load_data.get_dataset()
             for eva_model_num in range(select_eva_model_num[0], select_eva_model_num[1] + 1):
                 eva_model_num = str(eva_model_num)
                 # load the model to be evaluated
@@ -158,7 +162,7 @@ def main():
         # train:
         boost2_obj.train()
 
-    elif select_train_model == '5':
+    else:
         return 0
 
 
