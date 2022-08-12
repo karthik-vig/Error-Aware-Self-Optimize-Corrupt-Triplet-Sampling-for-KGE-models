@@ -1,12 +1,6 @@
 import json
-# import os
-# import re
-import sys
-
 import torch
-#from pykeen.datasets import FB15k237, FB15k, WN18
 
-#from models import TransE
 from train_and_evaluate import TransETrain, Evaluation
 from transe_boost import TransEBoost, TransEBoost2
 from data_handling import LoadMetaDataHandling, Draw
@@ -17,7 +11,7 @@ def main():
     dataset_num_map = {'FB15k': '1', 'FB15k237': '2', 'WN18': '3'}
     load_data = LoadMetaDataHandling(folder_list=folder_list, dataset_num_map=dataset_num_map)
 
-    select_train_model = input('''
+    select_option = input('''
                                \n1) Train a basic TransE model? 
                                \n2) Evaluate a model? 
                                \n3) Training a self-training type 1 model?
@@ -26,7 +20,7 @@ def main():
                                \n6) Exit (any other input will be lead to exit)
                                \n Enter (1, 2, 3, 4, 5): ''')
 
-    if select_train_model == '1':
+    if select_option == '1':
         # Get the transe model:
         meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[0])
         # Create the optimizer:
@@ -47,7 +41,7 @@ def main():
         # train TransE model:
         transe_model_train.train()
 
-    elif select_train_model == '2':
+    elif select_option == '2':
         evaluate_model = load_data.select_folder()
         if evaluate_model == -1:
             return -1
@@ -86,7 +80,7 @@ def main():
             json_file.truncate()
             json_file.close()
 
-    elif select_train_model == '3':
+    elif select_option == '3':
         meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[1])
         # Create the optimizer:
         optimizer = torch.optim.SGD(transe_model['cur_model'].parameters(),
@@ -106,7 +100,7 @@ def main():
         # train the model:
         self_train_type1.train()
 
-    elif select_train_model == '4':
+    elif select_option == '4':
         meta_data, exp_dir_name, transe_model, train_dataset, val_dataset, test_dataset = load_data.load(folder_list[2])
         # Check if transe_model is a dict or not:
         if str(type(transe_model)) != "<class 'dict'>":
@@ -152,7 +146,7 @@ def main():
         # train:
         boost2_obj.train()
 
-    elif select_train_model == '5':
+    elif select_option == '5':
         draw_obj = Draw()
         num_model_compare = int(input('Enter number of models to display in a graph: '))
         draw_model_met_dict = {}
@@ -166,6 +160,9 @@ def main():
         draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title='')
         draw_obj.plot_hits(hits_dict=draw_model_met_dict, title='')
         draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title='')
+
+    elif select_option == '6':
+        pass
 
     else:
         return 0
