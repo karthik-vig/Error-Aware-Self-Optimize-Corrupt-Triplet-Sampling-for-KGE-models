@@ -1,33 +1,7 @@
-import json
 import time
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-
-
-class SaveData:
-    def __init__(self, folder):
-        self.folder = folder
-
-    def save(self, model, epoch, avg_loss, **kwargs):
-        file_name = 'transe_' + str(epoch) + '.pt'
-        file_path = self.folder + '/'
-        try:
-            torch.save(model, file_path + file_name)
-            with open(file_path + 'meta_data.json', 'r+') as json_file:
-                meta_data = json.load(json_file)
-                meta_data['local'][file_name[:-3]] = {'Average Training Loss': float(avg_loss),
-                                                 'MR': -1,
-                                                 'MRR': -1,
-                                                 'Hits@10': -1}
-                meta_data['global']['latest epoch'] = int(epoch)
-                for key, value in kwargs.items():
-                    meta_data['global'][key] = value
-                json_file.seek(0)
-                json.dump(meta_data, json_file, indent=4)
-                json_file.truncate()
-                json_file.close()
-        except:
-            print('Save failed.')
+from data_handling import SaveData
 
 
 class TransETrain(SaveData):

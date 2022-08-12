@@ -6,6 +6,31 @@ from pykeen.datasets import FB15k237, FB15k, WN18
 
 from models import TransE
 
+class SaveData:
+    def __init__(self, folder):
+        self.folder = folder
+
+    def save(self, model, epoch, avg_loss, **kwargs):
+        file_name = 'transe_' + str(epoch) + '.pt'
+        file_path = self.folder + '/'
+        try:
+            torch.save(model, file_path + file_name)
+            with open(file_path + 'meta_data.json', 'r+') as json_file:
+                meta_data = json.load(json_file)
+                meta_data['local'][file_name[:-3]] = {'Average Training Loss': float(avg_loss),
+                                                 'MR': -1,
+                                                 'MRR': -1,
+                                                 'Hits@10': -1}
+                meta_data['global']['latest epoch'] = int(epoch)
+                for key, value in kwargs.items():
+                    meta_data['global'][key] = value
+                json_file.seek(0)
+                json.dump(meta_data, json_file, indent=4)
+                json_file.truncate()
+                json_file.close()
+        except:
+            print('Save failed.')
+
 
 class LoadMetaDataHandling:
     def __init__(self, folder_list, dataset_num_map):
@@ -183,6 +208,20 @@ class LoadMetaDataHandling:
 
 class Draw:
     def __init__(self):
+        pass
+
+    def meta_data_to_list(self, exp_dir_name):
+        with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
+            meta_data = json.load(json_file)
+            all_metrics = [metrics for metrics in meta_data['local'].values()]
+            train_loss = [float(tr_loss['Average Training Loss']) for tr_loss in all_metrics]
+            mr_val = [float(mr['MR']) for mr in all_metrics]
+            mrr_val = [float(mrr['MRR']) for mrr in all_metrics]
+            hits_at_10_val = [float(hits['Hits@10']) for hits in all_metrics]
+            json_file.close()
+        return train_loss, mr_val, mrr_val, hits_at_10_val
+
+    def plot_metrics(self):
         pass
 
 class HyperParameterOptim:
