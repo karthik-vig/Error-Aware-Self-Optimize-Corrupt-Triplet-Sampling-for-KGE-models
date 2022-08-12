@@ -54,6 +54,16 @@ class LoadMetaDataHandling:
     def dataset_name_to_number(self, dataset_name):
         return self.dataset_num_map[dataset_name]
 
+    def select_folder(self):
+        print('Select model folder:')
+        for index, folder in enumerate(self.folder_list):
+            print(str(index+1) + ') ' + folder)
+        select_eva_model = int(input('Enter a number: '))
+        if select_eva_model > 0 and select_eva_model <= len(self.folder_list):
+            return self.folder_list[select_eva_model - 1]
+        else:
+            return -1
+
     def select_exp(self, folder):
         print('Experiment List: ')
         for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if
@@ -186,12 +196,12 @@ class LoadMetaDataHandling:
         self.num_entity = dataset.num_entities.real
         self.num_relation = dataset.num_relations.real
         # print their shapes
+        print('Dataset Name: ', self.dataset_name)
         print('Training dataset size: ', self.train_dataset.shape)
         print('Validation dataset size: ', self.val_dataset.shape)
         print('Testing dataset size: ', self.test_dataset.shape)
         print('Number of Entities: ', self.num_entity)
         print('Number of relations: ', self.num_relation)
-        print('Dataset Name: ', self.dataset_name)
 
     def get_dataset(self):
         return self.train_dataset, self.val_dataset, self.test_dataset

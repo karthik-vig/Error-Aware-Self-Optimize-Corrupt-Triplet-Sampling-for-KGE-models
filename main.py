@@ -48,20 +48,9 @@ def main():
         transe_model_train.train()
 
     elif select_train_model == '2':
-        select_eva_model = input('''Select model to be evaluated:\n
-                                  1) original model\n
-                                  2) self training type 1\n
-                                  3) self training type 2\n
-                                  4) Exit (any other input will lead to exit)
-                                  Enter (1,2,3):''')
-        if select_eva_model == '1':
-            evaluate_model = folder_list[0]
-        elif select_eva_model == '2':
-            evaluate_model = folder_list[1]
-        elif select_eva_model == '3':
-            evaluate_model = folder_list[2]
-        else:
-            return 0
+        evaluate_model = load_data.select_folder()
+        if evaluate_model == -1:
+            return -1
         select_exp_num = load_data.select_exp(folder=evaluate_model)
         evaluate_model += '/' + 'exp_' + select_exp_num + '/'
         select_eva_model_num = load_data.select_model_num(exp_dir_name=evaluate_model)
@@ -165,14 +154,18 @@ def main():
 
     elif select_train_model == '5':
         draw_obj = Draw()
-        draw_obj.plot_mr(mr_dict={'exp1':'transe_selftrain_type_1/exp_1/',
-                                  'exp2':'transe_selftrain_type_1/exp_2/'}, title='MR Test')
-        draw_obj.plot_mrr(mrr_dict={'exp1':'transe_selftrain_type_1/exp_1/',
-                                  'exp2':'transe_selftrain_type_1/exp_2/'}, title='MRR Test')
-        draw_obj.plot_hits(hits_dict={'exp1':'transe_selftrain_type_1/exp_1/',
-                                  'exp2':'transe_selftrain_type_1/exp_2/'}, title='Hits Test')
-        draw_obj.plot_tr_loss(tr_dict={'exp1': 'transe_selftrain_type_1/exp_1/',
-                                      'exp2': 'transe_selftrain_type_1/exp_2/'}, title='tr loss Test')
+        num_model_compare = int(input('Enter number of models to display in a graph: '))
+        draw_model_met_dict = {}
+        for model_num in range(num_model_compare):
+            folder_name = load_data.select_folder()
+            exp_num = load_data.select_exp(folder=folder_name)
+            exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
+            model_name = input('Enter model name: ')
+            draw_model_met_dict[model_name] = exp_dir_name
+        draw_obj.plot_mr(mr_dict=draw_model_met_dict, title='')
+        draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title='')
+        draw_obj.plot_hits(hits_dict=draw_model_met_dict, title='')
+        draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title='')
 
     else:
         return 0
