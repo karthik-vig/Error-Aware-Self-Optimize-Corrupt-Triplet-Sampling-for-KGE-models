@@ -1,6 +1,8 @@
 import json
 import os
 import re
+
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -76,12 +78,15 @@ class LoadMetaDataHandling:
         select_exp_num = input('Choose a Exp. number from list: ')
         return select_exp_num
 
-    def select_model_num(self, exp_dir_name):
-        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir(exp_dir_name) if '.pt' in model_name]
+    def select_model_num(self, exp_dir_name, range_mode=True):
+        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir('./' + exp_dir_name) if '.pt' in model_name]
         start_model_num = min(model_num_list)
         end_model_num = max(model_num_list)
         print('Model number range is: ', start_model_num, ' to ', end_model_num)
-        select_model_num = list(map(int, input('Enter a model number range: ').split()))
+        if range_mode:
+            select_model_num = list(map(int, input('Enter a model number range: ').split()))
+        else:
+            select_model_num = int(input('Enter a model number: '))
         return select_model_num
 
     def resume_exp(self, folder):
@@ -289,10 +294,28 @@ class Draw:
                           ylabel='Training Loss',
                           en_save=en_save)
 
-    def plot_tsne(self, model_path):
+    def cal_tsne(self, model_path):
+        print('Starting TSNE calculation: ')
+        print('Model: ', model_path)
         transe_model = torch.load(model_path)
-        entity_emb, relation_emb = transe_model.get_embeddings()
-        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(entity_emb)
+        entity_emb, relation_emb = transe_model['cur_model'].get_embeddings()
+        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(entity_emb.cpu())
+        print('Done!!')
+        with open('tsne_save.npy', 'wb') as numpy_file:
+            np.save(numpy_file, tsne_emb)
+            numpy_file.close()
+        print('Saved TSNE data to disk.')
+
+    def plot_tsne(self, title, en_save=False):
+        tsne_emb = np.load('tsne_save.npy')
+        plt.close()
+        plt.title(title)
+        plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
+        if en_save:
+            plt.savefig(self.fig_save_folder + title)
+        else:
+            plt.show()
+
 
 class HyperParameterOptim:
     def __init__(self):

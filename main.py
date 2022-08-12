@@ -1,4 +1,6 @@
 import json
+import os
+
 import torch
 
 from train_and_evaluate import TransETrain, Evaluation
@@ -18,7 +20,9 @@ def main():
                                \n3) Training a self-training type 1 model?
                                \n4) Training a self-training type 2 model?
                                \n5) Draw graphs for evaluated metrics?
-                               \n6) Exit (any other input will be lead to exit)
+                               \n6) TSNE calculation/plot?
+                               \n7) Hyper Parameter tuning?
+                               \n8) Exit (any other input will be lead to exit)
                                \n Enter (1, 2, 3, 4, 5): ''')
 
     if select_option == '1':
@@ -169,6 +173,28 @@ def main():
         draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
 
     elif select_option == '6':
+        draw_obj = Draw(fig_save_folder=fig_save_folder)
+        select_tsne_option = input('Calculate a new TSNE values (y) or plot exiting ones (n)?: ')
+        if select_tsne_option == 'y':
+            folder_name = load_data.select_folder()
+            exp_num = load_data.select_exp(folder=folder_name)
+            exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
+            model_num = load_data.select_model_num(exp_dir_name=exp_dir_name, range_mode=False)
+            model_path = exp_dir_name + 'transe_' + str(model_num) + '.pt'
+            draw_obj.cal_tsne(model_path=model_path)
+        else:
+            if 'tsne_save.npy' not in os.listdir('./'):
+                print('Save file not found')
+                return -1
+            save_fig = input('Enable Save Figure? (y/n): ')
+            if save_fig == 'y':
+                save_cond = True
+            else:
+                save_cond = False
+            fig_title = input('Enter a title for the figures: ')
+            draw_obj.plot_tsne(title=fig_title, en_save=save_cond)
+
+    elif select_option == '7':
         pass
 
     else:
