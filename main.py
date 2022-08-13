@@ -3,15 +3,16 @@ import os
 
 import torch
 
+from data_handling import LoadMetaDataHandling, Draw
 from train_and_evaluate import TransETrain, Evaluation
 from transe_boost import TransEBoost, TransEBoost2
-from data_handling import LoadMetaDataHandling, Draw
 
 
 def main():
     folder_list = ['transe_original', 'transe_selftrain_type_1', 'transe_selftrain_type_2']
     dataset_num_map = {'FB15k': '1', 'FB15k237': '2', 'WN18': '3'}
     fig_save_folder = 'figures'
+    tsne_folder = 'tsne_cal_output'
     load_data = LoadMetaDataHandling(folder_list=folder_list, dataset_num_map=dataset_num_map)
 
     select_option = input('''
@@ -113,7 +114,7 @@ def main():
             transe_model = {'pre_model': temp,
                             'cur_model': temp
                             }
-        elif 'pre_model' not in  transe_model.keys():
+        elif 'pre_model' not in transe_model.keys():
             transe_model['pre_model'] = transe_model['cur_model']
         if meta_data['global']['latest epoch'] == 0:
             num_model_train = int(input('Enter number of models to train: '))
@@ -152,7 +153,7 @@ def main():
         boost2_obj.train()
 
     elif select_option == '5':
-        draw_obj = Draw(fig_save_folder=fig_save_folder)
+        draw_obj = Draw(fig_save_folder=fig_save_folder, tsne_folder=tsne_folder)
         save_fig = input('Enable Save Figure? (y/n): ')
         if save_fig == 'y':
             save_cond = True
@@ -173,7 +174,7 @@ def main():
         draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
 
     elif select_option == '6':
-        draw_obj = Draw(fig_save_folder=fig_save_folder)
+        draw_obj = Draw(fig_save_folder=fig_save_folder, tsne_folder=tsne_folder)
         select_tsne_option = input('Calculate a new TSNE values (y) or plot exiting ones (n)?: ')
         if select_tsne_option == 'y':
             folder_name = load_data.select_folder()
@@ -181,18 +182,48 @@ def main():
             exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
             model_num = load_data.select_model_num(exp_dir_name=exp_dir_name, range_mode=False)
             model_path = exp_dir_name + 'transe_' + str(model_num) + '.pt'
-            draw_obj.cal_tsne(model_path=model_path)
+            title = folder_name + '_' + 'ex' + str(exp_num) + '_' + 'model_' + str(model_num)
+            draw_obj.cal_tsne(model_path=model_path, title=title)
+            with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
+                meta_data = json.load(json_file)
+                json_file.close()
+            tsne_model_meta_data = {'model_path': model_path,
+                                    'dataset name': meta_data['global']['dataset name'],
+                                    'num entity': meta_data['global']['num entity'],
+                                    'device': meta_data['global']['device']
+                                    }
+            with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r+') as json_file:
+                tsne_meta_data = json.load(json_file)
+                tsne_meta_data[model_path] = tsne_model_meta_data
+                json_file.seek(0)
+                json.dump(tsne_meta_data, json_file, indent=4)
+                json_file.truncate()
+                json_file.close()
         else:
             if 'tsne_save.npy' not in os.listdir('./'):
                 print('Save file not found')
                 return -1
+            # with open('tsne_meta_data.json', 'r') as json_file:
+            #     tsne_meta_data = json.load(json_file)
+            #     json_file.close()
+            # transe_model = torch.load(tsne_meta_data['model_path'])
+            # dataset_name = tsne_meta_data['dataset name']
+            # load_data.choose_dataset(automatic_input=dataset_num_map[dataset_name])
+            # train_dataset, _, _ = load_data.get_dataset()
+            # eva_obj = Evaluation(data=train_dataset,
+            #                      model=transe_model['cur_model'],
+            #                      num_entity=tsne_meta_data['num entity'],
+            #                      device=tsne_meta_data['device'])
+            # err_entity = eva_obj.get_eva_entity()
             save_fig = input('Enable Save Figure? (y/n): ')
             if save_fig == 'y':
                 save_cond = True
             else:
                 save_cond = False
             fig_title = input('Enter a title for the figures: ')
-            draw_obj.plot_tsne(title=fig_title, en_save=save_cond)
+            draw_obj.plot_tsne(title=fig_title,
+                               # err_entity=err_entity,
+                               en_save=save_cond)
 
     elif select_option == '7':
         pass

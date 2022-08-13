@@ -227,7 +227,7 @@ class LoadMetaDataHandling:
             return meta_data
 
 class Draw:
-    def __init__(self, fig_save_folder=''):
+    def __init__(self, fig_save_folder='', tsne_folder=''):
         self.metric_ret_map = {'Training Loss':0,
                                'MR':1,
                                'MRR':2,
@@ -235,12 +235,23 @@ class Draw:
                                'num_epoch':4
                                }
         self.fig_save_folder = fig_save_folder + '/'
+        self.tsne_folder = tsne_folder + '/'
         self.check_folder(folder=fig_save_folder)
+        self.check_folder(folder=tsne_folder)
+        self.check_file(file_path=self.tsne_folder,
+                        file_name='tsne_meta_data.json')
 
     def check_folder(self, folder):
         exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name)]
         if folder not in exist_dir:
             os.mkdir(folder)
+
+    def check_file(self, file_path, file_name):
+        file_list = [f_name for f_name in os.listdir('./' + file_path)]
+        if file_name not in file_list:
+            with open(file_path + file_name, 'w') as json_file:
+                json.dump({}, json_file, indent=4)
+                json_file.close()
 
     def meta_data_to_list(self, exp_dir_name):
         with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
@@ -294,22 +305,23 @@ class Draw:
                           ylabel='Training Loss',
                           en_save=en_save)
 
-    def cal_tsne(self, model_path):
+    def cal_tsne(self, model_path, title):
         print('Starting TSNE calculation: ')
         print('Model: ', model_path)
         transe_model = torch.load(model_path)
         entity_emb, relation_emb = transe_model['cur_model'].get_embeddings()
         tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(entity_emb.cpu())
         print('Done!!')
-        with open('tsne_save.npy', 'wb') as numpy_file:
+        with open(self.tsne_folder + title + '.npy', 'wb') as numpy_file:
             np.save(numpy_file, tsne_emb)
             numpy_file.close()
         print('Saved TSNE data to disk.')
 
     def plot_tsne(self, title, en_save=False):
-        tsne_emb = np.load('tsne_save.npy')
+        tsne_emb = np.load(self.tsne_folder + 'tsne_save.npy')
         plt.close()
         plt.title(title)
+        #plt.scatter(tsne_emb[err_entity['tail_err_entity_t'], 0], tsne_emb[err_entity['tail_err_entity_t'], 1], color='red')
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
         if en_save:
             plt.savefig(self.fig_save_folder + title)

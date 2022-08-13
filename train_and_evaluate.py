@@ -114,3 +114,22 @@ class Evaluation:
         print('Mean Reciprocal Rank for prediction is: ', mrr_score)
         print('Hits@10 for prediction is: ', hit_at_10_score)
         return mr_score, mrr_score, hit_at_10_score
+
+    # def get_eva_entity(self):
+    #     err_entity = {'tail_err_entity_t': [],
+    #                   'tail_err_entity_h': [],
+    #                   'head_err_entity_t': [],
+    #                   'head_err_entity_h': [],
+    #                   }
+    #     for index, triplet in enumerate(self.dataset):
+    #         # get tail rank
+    #         tail_rank = self.get_ranking_list(all_head=False, triplet=triplet.to(device=self.device, non_blocking=True))
+    #         if tail_rank > 10:
+    #             err_entity['tail_err_entity_t'].append(triplet[2])
+    #             err_entity['tail_err_entity_h'].append(triplet[0])
+    #         # get head rank
+    #         head_rank = self.get_ranking_list(all_head=True, triplet=triplet.to(device=self.device, non_blocking=True))
+    #         if head_rank > 10:
+    #             err_entity['head_err_entity_t'].append(triplet[2])
+    #             err_entity['head_err_entity_h'].append(triplet[0])
+    #     return err_entity
