@@ -318,8 +318,9 @@ class Draw:
         print('Saved TSNE data to disk.')
 
     def plot_tsne(self, title, en_save=False):
-        tsne_emb = np.load(self.tsne_folder + 'tsne_save.npy')
+        tsne_emb = np.load(self.tsne_folder + title + '.npy')
         plt.close()
+        #plt.figure(figsize=(20, 30), dpi=1000)
         plt.title(title)
         #plt.scatter(tsne_emb[err_entity['tail_err_entity_t'], 0], tsne_emb[err_entity['tail_err_entity_t'], 1], color='red')
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])

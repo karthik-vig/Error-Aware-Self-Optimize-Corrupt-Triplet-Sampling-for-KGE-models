@@ -200,9 +200,9 @@ def main():
                 json_file.truncate()
                 json_file.close()
         else:
-            if 'tsne_save.npy' not in os.listdir('./'):
-                print('Save file not found')
-                return -1
+            # if 'tsne_save.npy' not in os.listdir('./'):
+            #     print('Save file not found')
+            #     return -1
             # with open('tsne_meta_data.json', 'r') as json_file:
             #     tsne_meta_data = json.load(json_file)
             #     json_file.close()
@@ -220,7 +220,13 @@ def main():
                 save_cond = True
             else:
                 save_cond = False
-            fig_title = input('Enter a title for the figures: ')
+            np_file_list = [file_name for file_name in os.listdir('./' + tsne_folder + '/') if '.npy' in file_name]
+            for index, np_file in enumerate(np_file_list):
+                print(str(index + 1) + ') ' + np_file)
+            select_tsne = int(input('Choose an option: '))
+            fig_title = np_file_list[select_tsne - 1][:-4]
+            # fig_title = input('Enter a title for the figures: ')
+            print(fig_title)
             draw_obj.plot_tsne(title=fig_title,
                                # err_entity=err_entity,
                                en_save=save_cond)
