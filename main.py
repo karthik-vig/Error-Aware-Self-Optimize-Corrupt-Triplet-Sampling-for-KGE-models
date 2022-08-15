@@ -194,7 +194,7 @@ def main():
                                     }
             with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r+') as json_file:
                 tsne_meta_data = json.load(json_file)
-                tsne_meta_data[model_path] = tsne_model_meta_data
+                tsne_meta_data[title] = tsne_model_meta_data
                 json_file.seek(0)
                 json.dump(tsne_meta_data, json_file, indent=4)
                 json_file.truncate()
@@ -203,9 +203,6 @@ def main():
             # if 'tsne_save.npy' not in os.listdir('./'):
             #     print('Save file not found')
             #     return -1
-            # with open('tsne_meta_data.json', 'r') as json_file:
-            #     tsne_meta_data = json.load(json_file)
-            #     json_file.close()
             # transe_model = torch.load(tsne_meta_data['model_path'])
             # dataset_name = tsne_meta_data['dataset name']
             # load_data.choose_dataset(automatic_input=dataset_num_map[dataset_name])
@@ -226,9 +223,31 @@ def main():
             select_tsne = int(input('Choose an option: '))
             fig_title = np_file_list[select_tsne - 1][:-4]
             # fig_title = input('Enter a title for the figures: ')
-            print(fig_title)
+            select_get_err_index_option = input('Evaluate new error index (y) or load from disk (n)?: ')
+            if select_get_err_index_option == 'y':
+                with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r') as json_file:
+                    tsne_meta_data = json.load(json_file)
+                    json_file.close()
+                transe_model = torch.load(tsne_meta_data[fig_title]['model_path'])
+                dataset_name = tsne_meta_data[fig_title]['dataset name']
+                load_data.choose_dataset(automatic_input=dataset_num_map[dataset_name])
+                train_dataset, _, _ = load_data.get_dataset()
+                eva_obj = Evaluation(data=train_dataset,
+                                     model=transe_model['cur_model'],
+                                     num_entity=tsne_meta_data[fig_title]['num entity'],
+                                     device=tsne_meta_data[fig_title]['device'])
+                err_entity = eva_obj.get_eva_entity()
+                torch.save(err_entity, tsne_folder + '/' + fig_title + '.pt')
+            else:
+                file_list = [file_name for file_name in os.listdir('./' + tsne_folder + '/')]
+                if fig_title + '.pt' in file_list:
+                    err_entity = torch.load(tsne_folder + '/' + fig_title + '.pt')
+                else:
+                    print('Error: loading pre-evaluated values')
+                    return -1
+            print('Displaying TSNE for: ', fig_title)
             draw_obj.plot_tsne(title=fig_title,
-                               # err_entity=err_entity,
+                               err_entity=err_entity,
                                en_save=save_cond)
 
     elif select_option == '7':

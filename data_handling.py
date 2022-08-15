@@ -317,7 +317,7 @@ class Draw:
             numpy_file.close()
         print('Saved TSNE data to disk.')
 
-    def plot_tsne(self, title, en_save=False):
+    def plot_tsne(self, title, err_entity, en_save=False):
         tsne_emb = np.load(self.tsne_folder + title + '.npy')
         plt.close()
         #plt.figure(figsize=(20, 30), dpi=1000)
