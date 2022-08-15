@@ -37,9 +37,13 @@ class SaveData:
             print('Save failed.')
 
 
-class FolderHandling:
+class DataFolderHandling:
     def __init__(self):
-        pass
+        self.train_dataset = None
+        self.val_dataset = None
+        self.test_dataset = None
+        self.num_entity = None
+        self.num_relation = None
 
     def check_folder(self, folder_list):
         # check if the necessary folders exist
@@ -85,8 +89,42 @@ class FolderHandling:
         else:
             return -1
 
+    def choose_dataset(self, automatic_input=None):
+        if automatic_input == None:
+            select_dataset = input(
+                '''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
+        else:
+            select_dataset = automatic_input
+        if select_dataset == '1':
+            dataset = FB15k()
+            self.dataset_name = 'FB15k'
+        elif select_dataset == '2':
+            dataset = FB15k237()
+            self.dataset_name = 'FB15k237'
+        elif select_dataset == '3':
+            dataset = WN18()
+            self.dataset_name = 'WN18'
+        else:
+            return -1
+        # assign the values
+        self.train_dataset = dataset.training.mapped_triples
+        self.val_dataset = dataset.validation.mapped_triples
+        self.test_dataset = dataset.testing.mapped_triples
+        self.num_entity = dataset.num_entities.real
+        self.num_relation = dataset.num_relations.real
+        # print their shapes
+        print('Dataset Name: ', self.dataset_name)
+        print('Training dataset size: ', self.train_dataset.shape)
+        print('Validation dataset size: ', self.val_dataset.shape)
+        print('Testing dataset size: ', self.test_dataset.shape)
+        print('Number of Entities: ', self.num_entity)
+        print('Number of relations: ', self.num_relation)
 
-class LoadMetaDataHandling(FolderHandling):
+    def get_dataset(self):
+        return self.train_dataset, self.val_dataset, self.test_dataset
+
+
+class LoadMetaDataHandling(DataFolderHandling):
     def __init__(self, folder_list, dataset_num_map):
         super().__init__()
         self.train_dataset = None
@@ -237,39 +275,39 @@ class LoadMetaDataHandling(FolderHandling):
         transe_model = torch.load(model_path)
         return transe_model, model_path
 
-    def choose_dataset(self, automatic_input=None):
-        if automatic_input == None:
-            select_dataset = input(
-                '''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
-        else:
-            select_dataset = automatic_input
-        if select_dataset == '1':
-            dataset = FB15k()
-            self.dataset_name = 'FB15k'
-        elif select_dataset == '2':
-            dataset = FB15k237()
-            self.dataset_name = 'FB15k237'
-        elif select_dataset == '3':
-            dataset = WN18()
-            self.dataset_name = 'WN18'
-        else:
-            return -1
-        # assign the values
-        self.train_dataset = dataset.training.mapped_triples
-        self.val_dataset = dataset.validation.mapped_triples
-        self.test_dataset = dataset.testing.mapped_triples
-        self.num_entity = dataset.num_entities.real
-        self.num_relation = dataset.num_relations.real
-        # print their shapes
-        print('Dataset Name: ', self.dataset_name)
-        print('Training dataset size: ', self.train_dataset.shape)
-        print('Validation dataset size: ', self.val_dataset.shape)
-        print('Testing dataset size: ', self.test_dataset.shape)
-        print('Number of Entities: ', self.num_entity)
-        print('Number of relations: ', self.num_relation)
-
-    def get_dataset(self):
-        return self.train_dataset, self.val_dataset, self.test_dataset
+    # def choose_dataset(self, automatic_input=None):
+    #     if automatic_input == None:
+    #         select_dataset = input(
+    #             '''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
+    #     else:
+    #         select_dataset = automatic_input
+    #     if select_dataset == '1':
+    #         dataset = FB15k()
+    #         self.dataset_name = 'FB15k'
+    #     elif select_dataset == '2':
+    #         dataset = FB15k237()
+    #         self.dataset_name = 'FB15k237'
+    #     elif select_dataset == '3':
+    #         dataset = WN18()
+    #         self.dataset_name = 'WN18'
+    #     else:
+    #         return -1
+    #     # assign the values
+    #     self.train_dataset = dataset.training.mapped_triples
+    #     self.val_dataset = dataset.validation.mapped_triples
+    #     self.test_dataset = dataset.testing.mapped_triples
+    #     self.num_entity = dataset.num_entities.real
+    #     self.num_relation = dataset.num_relations.real
+    #     # print their shapes
+    #     print('Dataset Name: ', self.dataset_name)
+    #     print('Training dataset size: ', self.train_dataset.shape)
+    #     print('Validation dataset size: ', self.val_dataset.shape)
+    #     print('Testing dataset size: ', self.test_dataset.shape)
+    #     print('Number of Entities: ', self.num_entity)
+    #     print('Number of relations: ', self.num_relation)
+    #
+    # def get_dataset(self):
+    #     return self.train_dataset, self.val_dataset, self.test_dataset
 
     def meta_data_add_field(self, exp_dir_name, **kwargs):
         with open(exp_dir_name + '/' + 'meta_data.json', 'r+') as json_file:

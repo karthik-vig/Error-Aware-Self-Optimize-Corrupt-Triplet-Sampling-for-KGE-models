@@ -1,13 +1,13 @@
 import time
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-from data_handling import SaveData
+from data_handling import SaveData, DataFolderHandling
 
 
 class TransETrain(SaveData):
     def __init__(self, train_dataset, batch_size, num_entity, model, device, optimizer, start_epoch, end_epoch, seed, folder,
                  save_epoch=1):
-        super().__init__(folder)
+        super().__init__(folder=folder)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         self.train_dataset = train_dataset
@@ -64,15 +64,30 @@ class TransETrain(SaveData):
                           avg_loss=avg_train_loss)
 
 
-class Evaluation:
-    def __init__(self, data, model, num_entity, device):
+class Evaluation(DataFolderHandling):
+    def __init__(self, data, model, num_entity, device, folder_list):
+        super().__init__()
         self.dataset = data
         self.model = model
         self.num_entity = num_entity
         self.device = device
+        self.folder_list = folder_list
         self.all_entities = self.all_entities = torch.arange(0, self.num_entity, dtype=torch.int64).to(self.device,
                                                                                                        non_blocking=True)
         self.test_triplet = torch.zeros(self.num_entity, 3, dtype=torch.int64).to(self.device, non_blocking=True)
+
+    def get_exp_dir(self):
+        folder = self.select_folder(folder_list=self.folder_list)
+        if folder == -1:
+            return -1
+        model_path = folder + '/'
+        exp_dir = self.select_exp(folder=model_path)
+        if exp_dir == -1:
+            return -1
+        model_path += exp_dir + '/'
+        model_name = self.select_model_num(exp_dir_name=model_path)
+        if model_name == -1:
+            return -1
 
     def get_ranking_list(self, all_head, triplet):
         self.test_triplet[:, 1] = triplet[1]
