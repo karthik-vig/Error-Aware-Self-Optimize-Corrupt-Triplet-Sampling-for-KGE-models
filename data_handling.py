@@ -2,13 +2,14 @@ import json
 import os
 import re
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
 from pykeen.datasets import FB15k237, FB15k, WN18
+from sklearn.manifold import TSNE
 
 from models import TransE
+
 
 class SaveData:
     def __init__(self, folder):
@@ -22,9 +23,9 @@ class SaveData:
             with open(file_path + 'meta_data.json', 'r+') as json_file:
                 meta_data = json.load(json_file)
                 meta_data['local'][file_name[:-3]] = {'Average Training Loss': float(avg_loss),
-                                                 'MR': -1,
-                                                 'MRR': -1,
-                                                 'Hits@10': -1}
+                                                      'MR': -1,
+                                                      'MRR': -1,
+                                                      'Hits@10': -1}
                 meta_data['global']['latest epoch'] = int(epoch)
                 for key, value in kwargs.items():
                     meta_data['global'][key] = value
@@ -36,8 +37,58 @@ class SaveData:
             print('Save failed.')
 
 
-class LoadMetaDataHandling:
+class FolderHandling:
+    def __init__(self):
+        pass
+
+    def check_folder(self, folder_list):
+        # check if the necessary folders exist
+        exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name) if
+                     dir_name in folder_list]
+        if len(exist_dir) != len(folder_list):
+            dir_to_create = [dir_name for dir_name in folder_list if dir_name not in exist_dir]
+            for direc in dir_to_create:
+                os.mkdir(direc)
+
+    def select_folder(self, folder_list):
+        print('Select model folder:')
+        for index, folder in enumerate(folder_list):
+            print(str(index + 1) + ') ' + folder)
+        select_eva_model = int(input('Enter a number: '))
+        if select_eva_model > 0 and select_eva_model <= len(folder_list):
+            return folder_list[select_eva_model - 1]
+        else:
+            return -1
+
+    def select_exp(self, folder):
+        print('Experiment List: ')
+        exp_dir_list = [dir_name for dir_name in os.listdir('./' + folder) if
+                        os.path.isdir('./' + folder + '/' + dir_name)]
+        for exp in exp_dir_list:
+            print(exp)
+        select_exp_num = input('Choose a Exp. number from list: ')
+        exp_dir = 'exp_' + select_exp_num
+        if exp_dir in exp_dir_list:
+            return exp_dir
+        else:
+            return -1
+
+    def select_model_num(self, exp_dir_name):
+        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir('./' + exp_dir_name) if
+                          '.pt' in model_name]
+        start_model_num = min(model_num_list)
+        end_model_num = max(model_num_list)
+        print('Model number range is: ', start_model_num, ' to ', end_model_num)
+        select_model_num = int(input('Enter a model number: '))
+        if select_model_num in model_num_list:
+            return 'transe_' + str(select_model_num) + '.pt'
+        else:
+            return -1
+
+
+class LoadMetaDataHandling(FolderHandling):
     def __init__(self, folder_list, dataset_num_map):
+        super().__init__()
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
@@ -46,48 +97,48 @@ class LoadMetaDataHandling:
         self.num_relation = None
         self.folder_list = folder_list
         self.dataset_num_map = dataset_num_map
-        self.check_folder()
+        self.check_folder(folder_list=self.folder_list)
 
-    def check_folder(self):
-        # check if the necessary folders exist
-        exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name) if
-                     dir_name in self.folder_list]
-        if len(exist_dir) != len(self.folder_list):
-            dir_to_create = [dir_name for dir_name in self.folder_list if dir_name not in exist_dir]
-            for direc in dir_to_create:
-                os.mkdir(direc)
-
-    def dataset_name_to_number(self, dataset_name):
-        return self.dataset_num_map[dataset_name]
-
-    def select_folder(self):
-        print('Select model folder:')
-        for index, folder in enumerate(self.folder_list):
-            print(str(index+1) + ') ' + folder)
-        select_eva_model = int(input('Enter a number: '))
-        if select_eva_model > 0 and select_eva_model <= len(self.folder_list):
-            return self.folder_list[select_eva_model - 1]
-        else:
-            return -1
-
-    def select_exp(self, folder):
-        print('Experiment List: ')
-        for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if
-                    os.path.isdir('./' + folder + '/' + dir_name)]:
-            print(exp)
-        select_exp_num = input('Choose a Exp. number from list: ')
-        return select_exp_num
-
-    def select_model_num(self, exp_dir_name, range_mode=True):
-        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir('./' + exp_dir_name) if '.pt' in model_name]
-        start_model_num = min(model_num_list)
-        end_model_num = max(model_num_list)
-        print('Model number range is: ', start_model_num, ' to ', end_model_num)
-        if range_mode:
-            select_model_num = list(map(int, input('Enter a model number range: ').split()))
-        else:
-            select_model_num = int(input('Enter a model number: '))
-        return select_model_num
+    # def check_folder(self):
+    #     # check if the necessary folders exist
+    #     exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name) if
+    #                  dir_name in self.folder_list]
+    #     if len(exist_dir) != len(self.folder_list):
+    #         dir_to_create = [dir_name for dir_name in self.folder_list if dir_name not in exist_dir]
+    #         for direc in dir_to_create:
+    #             os.mkdir(direc)
+    #
+    # def dataset_name_to_number(self, dataset_name):
+    #     return self.dataset_num_map[dataset_name]
+    #
+    # def select_folder(self):
+    #     print('Select model folder:')
+    #     for index, folder in enumerate(self.folder_list):
+    #         print(str(index+1) + ') ' + folder)
+    #     select_eva_model = int(input('Enter a number: '))
+    #     if select_eva_model > 0 and select_eva_model <= len(self.folder_list):
+    #         return self.folder_list[select_eva_model - 1]
+    #     else:
+    #         return -1
+    #
+    # def select_exp(self, folder):
+    #     print('Experiment List: ')
+    #     for exp in [dir_name for dir_name in os.listdir('./' + folder + '/') if
+    #                 os.path.isdir('./' + folder + '/' + dir_name)]:
+    #         print(exp)
+    #     select_exp_num = input('Choose a Exp. number from list: ')
+    #     return select_exp_num
+    #
+    # def select_model_num(self, exp_dir_name, range_mode=True):
+    #     model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir('./' + exp_dir_name) if '.pt' in model_name]
+    #     start_model_num = min(model_num_list)
+    #     end_model_num = max(model_num_list)
+    #     print('Model number range is: ', start_model_num, ' to ', end_model_num)
+    #     if range_mode:
+    #         select_model_num = list(map(int, input('Enter a model number range: ').split()))
+    #     else:
+    #         select_model_num = int(input('Enter a model number: '))
+    #     return select_model_num
 
     def resume_exp(self, folder):
         select_exp_num = self.select_exp(folder=folder)
@@ -95,7 +146,7 @@ class LoadMetaDataHandling:
         with open(exp_dir_name + '/' + 'meta_data.json', 'r') as json_file:
             meta_data = json.load(json_file)
             json_file.close()
-        automatic_input = self.dataset_name_to_number(dataset_name=meta_data['global']['dataset name'])
+        automatic_input = self.dataset_num_map[meta_data['global']['dataset name']]
         self.choose_dataset(automatic_input=automatic_input)
         transe_model = torch.load(exp_dir_name + '/' + 'transe_' + str(meta_data['global']['latest epoch']) + '.pt')
         return meta_data, exp_dir_name, transe_model
@@ -171,20 +222,25 @@ class LoadMetaDataHandling:
         return meta_data, exp_dir_name, transe_model
 
     def get_model(self):
-        print('Select a folder: ')
-        for index, folder in enumerate(self.folder_list):
-            print(str(index + 1) + ') ' + folder)
-        folder_choice = input('Enter a number: ')
-        exp_choice = input('Enter a exp. number: ')
-        model_choice = input('Enter a model number: ')
-        folder = self.folder_list[int(folder_choice) - 1]
-        model_path = folder + '/' + 'exp_' + exp_choice + '/' + 'transe_' + model_choice + '.pt'
+        folder = self.select_folder(folder_list=self.folder_list)
+        if folder == -1:
+            return -1
+        model_path = folder + '/'
+        exp_dir = self.select_exp(folder=model_path)
+        if exp_dir == -1:
+            return -1
+        model_path += exp_dir + '/'
+        model_name = self.select_model_num(exp_dir_name=model_path)
+        if model_name == -1:
+            return -1
+        model_path += model_name
         transe_model = torch.load(model_path)
         return transe_model, model_path
 
     def choose_dataset(self, automatic_input=None):
         if automatic_input == None:
-            select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
+            select_dataset = input(
+                '''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
         else:
             select_dataset = automatic_input
         if select_dataset == '1':
@@ -197,7 +253,7 @@ class LoadMetaDataHandling:
             dataset = WN18()
             self.dataset_name = 'WN18'
         else:
-            return
+            return -1
         # assign the values
         self.train_dataset = dataset.training.mapped_triples
         self.val_dataset = dataset.validation.mapped_triples
@@ -226,13 +282,14 @@ class LoadMetaDataHandling:
             json_file.close()
             return meta_data
 
+
 class Draw:
     def __init__(self, fig_save_folder='', tsne_folder=''):
-        self.metric_ret_map = {'Training Loss':0,
-                               'MR':1,
-                               'MRR':2,
-                               'Hits@10':3,
-                               'num_epoch':4
+        self.metric_ret_map = {'Training Loss': 0,
+                               'MR': 1,
+                               'MRR': 2,
+                               'Hits@10': 3,
+                               'num_epoch': 4
                                }
         self.fig_save_folder = fig_save_folder + '/'
         self.tsne_folder = tsne_folder + '/'
@@ -263,7 +320,14 @@ class Draw:
             mrr_val = [float(mrr['MRR']) for mrr in all_metrics]
             hits_at_10_val = [float(hits['Hits@10']) for hits in all_metrics]
             json_file.close()
-        return train_loss, mr_val, mrr_val, hits_at_10_val, num_epoch
+        metric_map = {'Training Loss': train_loss,
+                      'MR': mr_val,
+                      'MRR': mrr_val,
+                      'Hits@10': hits_at_10_val,
+                      'num_epoch': num_epoch
+                      }
+        # return train_loss, mr_val, mrr_val, hits_at_10_val, num_epoch
+        return metric_map
 
     def plot_metrics(self, met_dict, title, ylabel, en_save):
         plt.close()
@@ -272,9 +336,9 @@ class Draw:
         plt.ylabel(ylabel)
         for exp in met_dict.keys():
             all_metrics = self.meta_data_to_list(exp_dir_name=met_dict[exp])
-            num_epoch = all_metrics[self.metric_ret_map['num_epoch']]
-            metric = all_metrics[self.metric_ret_map[ylabel]]
-            plt.plot(list(range(1, num_epoch+1)), metric, label=exp)
+            num_epoch = all_metrics['num_epoch']
+            metric = all_metrics[ylabel]
+            plt.plot(list(range(1, num_epoch + 1)), metric, label=exp)
         plt.legend(loc='center right')
         if en_save:
             plt.savefig(self.fig_save_folder + title + ' ' + ylabel)
@@ -310,7 +374,8 @@ class Draw:
         print('Model: ', model_path)
         transe_model = torch.load(model_path)
         entity_emb, relation_emb = transe_model['cur_model'].get_embeddings()
-        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(entity_emb.cpu())
+        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(
+            entity_emb.cpu())
         print('Done!!')
         with open(self.tsne_folder + title + '.npy', 'wb') as numpy_file:
             np.save(numpy_file, tsne_emb)
@@ -320,9 +385,9 @@ class Draw:
     def plot_tsne(self, title, en_save=False):
         tsne_emb = np.load(self.tsne_folder + title + '.npy')
         plt.close()
-        #plt.figure(figsize=(20, 30), dpi=1000)
+        # plt.figure(figsize=(20, 30), dpi=1000)
         plt.title(title)
-        #plt.scatter(tsne_emb[err_entity['tail_err_entity_t'], 0], tsne_emb[err_entity['tail_err_entity_t'], 1], color='red')
+        # plt.scatter(tsne_emb[err_entity['tail_err_entity_t'], 0], tsne_emb[err_entity['tail_err_entity_t'], 1], color='red')
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
         if en_save:
             plt.savefig(self.fig_save_folder + title)
