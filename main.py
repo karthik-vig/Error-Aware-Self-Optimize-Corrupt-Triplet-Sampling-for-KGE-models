@@ -245,9 +245,11 @@ def main():
                 else:
                     print('Error: loading pre-evaluated values')
                     return -1
+            threshold = int(input('Enter a threshold to display error entities: '))
             print('Displaying TSNE for: ', fig_title)
             draw_obj.plot_tsne(title=fig_title,
                                err_entity=err_entity,
+                               threshold=threshold,
                                en_save=save_cond)
 
     elif select_option == '7':

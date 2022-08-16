@@ -317,31 +317,44 @@ class Draw:
             numpy_file.close()
         print('Saved TSNE data to disk.')
 
-    def plot_tsne(self, title, err_entity, en_save=False):
+    def err_entity_threshold(self, err_entity_tensor, threshold):
+        unique_entities = err_entity_tensor.unique()
+        entity_err_freq_dict = {}
+        for entity in unique_entities:
+            freq_val = torch.count_nonzero(torch.where(err_entity_tensor == entity, 1, 0))
+            entity_err_freq_dict[entity] = freq_val
+        entity_err_freq_dict = dict(sorted(entity_err_freq_dict.items(), key=lambda item: item[1], reverse=True))
+        total_errs = sum(entity_err_freq_dict.values())
+        total_num_unique_entities = len(entity_err_freq_dict)
+        entity_err_freq_dict = {k: v for k, v in entity_err_freq_dict.items() if v > threshold}
+        select_errs = sum(entity_err_freq_dict.values())
+        select_num_unique_entities = len(entity_err_freq_dict)
+        print('percentage of errors accounted for: ', select_errs / total_errs)
+        print('percentage of entities accounted for: ', select_num_unique_entities / total_num_unique_entities)
+        return entity_err_freq_dict
+
+    def plot_tsne(self, title, err_entity, threshold, en_save=False):
+        print('Choose an option: ')
+        err_entity_keys_list = list(err_entity.keys())
+        for index, key in enumerate(err_entity_keys_list):
+            print(str(index+1) + ') ' + str(key))
+        select_dis_option = int(input('Enter an option: '))
+        if select_dis_option <= 0 or select_dis_option > len(err_entity_keys_list):
+            return -1
+        dis_option = err_entity_keys_list[select_dis_option - 1]
         tsne_emb = np.load(self.tsne_folder + title + '.npy')
         plt.close()
         #plt.figure(figsize=(20, 30), dpi=1000)
         plt.title(title)
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
-        unique_entities = err_entity['tail_err_entity_t'].unique()
-        entity_err_freq_dict = {}
-        for entity in unique_entities:
-            freq_val = torch.count_nonzero(torch.where(err_entity['tail_err_entity_t'] == entity, 1, 0))
-            entity_err_freq_dict[entity] = freq_val
-        entity_err_freq_dict = dict(sorted(entity_err_freq_dict.items(), key=lambda item: item[1], reverse=True))
-        total_errs = sum(entity_err_freq_dict.values())
-        total_num_unique_entities = len(entity_err_freq_dict)
-        entity_err_freq_dict = { k:v for k, v in entity_err_freq_dict.items() if v > 30}
-        select_errs = sum(entity_err_freq_dict.values())
-        select_num_unique_entities = len(entity_err_freq_dict)
-        print('percentage of errors accounted for: ', select_errs / total_errs)
-        print('percentage of entities accounted for: ', select_num_unique_entities / total_num_unique_entities)
-        # print(entity_err_freq_dict)
+        entity_err_freq_dict = self.err_entity_threshold(err_entity_tensor=err_entity[dis_option],
+                                                         threshold=threshold)
         plt.scatter(tsne_emb[list(entity_err_freq_dict.keys()), 0], tsne_emb[list(entity_err_freq_dict.keys()), 1], color='red')
         if en_save:
-            plt.savefig(self.fig_save_folder + title)
+            plt.savefig(self.fig_save_folder + title + '_' + dis_option)
         else:
             plt.show()
+
 
 
 class HyperParameterOptim:

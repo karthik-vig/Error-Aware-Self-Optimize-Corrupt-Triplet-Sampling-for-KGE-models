@@ -116,22 +116,22 @@ class Evaluation:
         return mr_score, mrr_score, hit_at_10_score
 
     def get_eva_entity(self):
-        err_entity = {'tail_err_entity_t': [],
-                      'tail_err_entity_h': [],
-                      'head_err_entity_t': [],
-                      'head_err_entity_h': [],
+        err_entity = {'tail_pred_err_tail': [],
+                      'tail_pred_err_head': [],
+                      'head_pred_err_tail': [],
+                      'head_pred_err_head': [],
                       }
         for index, triplet in enumerate(self.dataset):
             # get tail rank
             tail_rank = self.get_ranking_list(all_head=False, triplet=triplet.to(device=self.device, non_blocking=True))
             if tail_rank > 10:
-                err_entity['tail_err_entity_t'].append(triplet[2])
-                err_entity['tail_err_entity_h'].append(triplet[0])
+                err_entity['tail_pred_err_tail'].append(triplet[2])
+                err_entity['tail_pred_err_head'].append(triplet[0])
             # get head rank
             head_rank = self.get_ranking_list(all_head=True, triplet=triplet.to(device=self.device, non_blocking=True))
             if head_rank > 10:
-                err_entity['head_err_entity_t'].append(triplet[2])
-                err_entity['head_err_entity_h'].append(triplet[0])
+                err_entity['head_pred_err_tail'].append(triplet[2])
+                err_entity['head_pred_err_head'].append(triplet[0])
         for key in err_entity.keys():
             err_entity[key] = torch.tensor(err_entity[key])
         return err_entity
