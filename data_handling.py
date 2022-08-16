@@ -322,8 +322,22 @@ class Draw:
         plt.close()
         #plt.figure(figsize=(20, 30), dpi=1000)
         plt.title(title)
-        #plt.scatter(tsne_emb[err_entity['tail_err_entity_t'], 0], tsne_emb[err_entity['tail_err_entity_t'], 1], color='red')
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
+        unique_entities = err_entity['tail_err_entity_t'].unique()
+        entity_err_freq_dict = {}
+        for entity in unique_entities:
+            freq_val = torch.count_nonzero(torch.where(err_entity['tail_err_entity_t'] == entity, 1, 0))
+            entity_err_freq_dict[entity] = freq_val
+        entity_err_freq_dict = dict(sorted(entity_err_freq_dict.items(), key=lambda item: item[1], reverse=True))
+        total_errs = sum(entity_err_freq_dict.values())
+        total_num_unique_entities = len(entity_err_freq_dict)
+        entity_err_freq_dict = { k:v for k, v in entity_err_freq_dict.items() if v > 30}
+        select_errs = sum(entity_err_freq_dict.values())
+        select_num_unique_entities = len(entity_err_freq_dict)
+        print('percentage of errors accounted for: ', select_errs / total_errs)
+        print('percentage of entities accounted for: ', select_num_unique_entities / total_num_unique_entities)
+        # print(entity_err_freq_dict)
+        plt.scatter(tsne_emb[list(entity_err_freq_dict.keys()), 0], tsne_emb[list(entity_err_freq_dict.keys()), 1], color='red')
         if en_save:
             plt.savefig(self.fig_save_folder + title)
         else:

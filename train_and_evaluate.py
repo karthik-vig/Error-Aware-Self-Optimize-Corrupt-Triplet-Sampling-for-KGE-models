@@ -132,4 +132,6 @@ class Evaluation:
             if head_rank > 10:
                 err_entity['head_err_entity_t'].append(triplet[2])
                 err_entity['head_err_entity_h'].append(triplet[0])
+        for key in err_entity.keys():
+            err_entity[key] = torch.tensor(err_entity[key])
         return err_entity
