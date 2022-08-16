@@ -317,7 +317,7 @@ class Draw:
             numpy_file.close()
         print('Saved TSNE data to disk.')
 
-    def err_entity_threshold(self, err_entity_tensor, threshold):
+    def err_entity_threshold(self, err_entity_tensor, threshold, title, dis_option):
         unique_entities = err_entity_tensor.unique()
         entity_err_freq_dict = {}
         for entity in unique_entities:
@@ -331,6 +331,15 @@ class Draw:
         select_num_unique_entities = len(entity_err_freq_dict)
         print('percentage of errors accounted for: ', select_errs / total_errs)
         print('percentage of entities accounted for: ', select_num_unique_entities / total_num_unique_entities)
+        with open(self.tsne_folder + 'tsne_meta_data.json', 'r+') as json_file:
+            tsne_meta_data = json.load(json_file)
+            tsne_meta_data[title][dis_option]['threshold'] = int(threshold)
+            tsne_meta_data[title][dis_option]['ratio of errors over threshold'] = float(select_errs / total_errs)
+            tsne_meta_data[title][dis_option]['ratio of entities over threshold'] = float(select_num_unique_entities / total_num_unique_entities)
+            json_file.seek(0)
+            json.dump(tsne_meta_data, json_file, indent=4)
+            json_file.truncate()
+            json_file.close()
         return entity_err_freq_dict
 
     def plot_tsne(self, title, err_entity, threshold, en_save=False):
@@ -348,7 +357,9 @@ class Draw:
         plt.title(title)
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
         entity_err_freq_dict = self.err_entity_threshold(err_entity_tensor=err_entity[dis_option],
-                                                         threshold=threshold)
+                                                         threshold=threshold,
+                                                         title=title,
+                                                         dis_option=dis_option)
         plt.scatter(tsne_emb[list(entity_err_freq_dict.keys()), 0], tsne_emb[list(entity_err_freq_dict.keys()), 1], color='red')
         if en_save:
             plt.savefig(self.fig_save_folder + title + '_' + dis_option)

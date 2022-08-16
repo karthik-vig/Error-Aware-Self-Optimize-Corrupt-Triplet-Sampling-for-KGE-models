@@ -190,7 +190,11 @@ def main():
             tsne_model_meta_data = {'model_path': model_path,
                                     'dataset name': meta_data['global']['dataset name'],
                                     'num entity': meta_data['global']['num entity'],
-                                    'device': meta_data['global']['device']
+                                    'device': meta_data['global']['device'],
+                                    'tail_pred_err_tail': {},
+                                    'tail_pred_err_head': {},
+                                    'head_pred_err_tail': {},
+                                    'head_pred_err_head': {},
                                     }
             with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r+') as json_file:
                 tsne_meta_data = json.load(json_file)
@@ -200,18 +204,6 @@ def main():
                 json_file.truncate()
                 json_file.close()
         else:
-            # if 'tsne_save.npy' not in os.listdir('./'):
-            #     print('Save file not found')
-            #     return -1
-            # transe_model = torch.load(tsne_meta_data['model_path'])
-            # dataset_name = tsne_meta_data['dataset name']
-            # load_data.choose_dataset(automatic_input=dataset_num_map[dataset_name])
-            # train_dataset, _, _ = load_data.get_dataset()
-            # eva_obj = Evaluation(data=train_dataset,
-            #                      model=transe_model['cur_model'],
-            #                      num_entity=tsne_meta_data['num entity'],
-            #                      device=tsne_meta_data['device'])
-            # err_entity = eva_obj.get_eva_entity()
             save_fig = input('Enable Save Figure? (y/n): ')
             if save_fig == 'y':
                 save_cond = True
