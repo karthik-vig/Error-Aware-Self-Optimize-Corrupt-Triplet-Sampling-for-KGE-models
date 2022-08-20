@@ -191,10 +191,21 @@ def main():
                                     'dataset name': meta_data['global']['dataset name'],
                                     'num entity': meta_data['global']['num entity'],
                                     'device': meta_data['global']['device'],
-                                    'tail_pred_err_tail': {},
-                                    'tail_pred_err_head': {},
-                                    'head_pred_err_tail': {},
-                                    'head_pred_err_head': {},
+                                    'train': {'tail_pred_err_tail': {},
+                                              'tail_pred_err_head': {},
+                                              'head_pred_err_tail': {},
+                                              'head_pred_err_head': {},
+                                              },
+                                    'val': {'tail_pred_err_tail': {},
+                                            'tail_pred_err_head': {},
+                                            'head_pred_err_tail': {},
+                                            'head_pred_err_head': {},
+                                            },
+                                    'test': {'tail_pred_err_tail': {},
+                                             'tail_pred_err_head': {},
+                                             'head_pred_err_tail': {},
+                                             'head_pred_err_head': {},
+                                             },
                                     }
             with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r+') as json_file:
                 tsne_meta_data = json.load(json_file)
@@ -223,24 +234,52 @@ def main():
                 transe_model = torch.load(tsne_meta_data[fig_title]['model_path'])
                 dataset_name = tsne_meta_data[fig_title]['dataset name']
                 load_data.choose_dataset(automatic_input=dataset_num_map[dataset_name])
-                train_dataset, _, _ = load_data.get_dataset()
-                eva_obj = Evaluation(data=train_dataset,
+                train_dataset, val_dataset, test_dataset = load_data.get_dataset()
+                select_dataset = input('Enter a dataset: training (1), validation (2), test (3), exit (4): ')
+                if select_dataset == '1':
+                    eva_dataset = train_dataset
+                    dataset_type = 'train'
+                elif select_dataset == '2':
+                    eva_dataset = val_dataset
+                    dataset_type = 'val'
+                elif select_dataset == '3':
+                    eva_dataset = test_dataset
+                    dataset_type = 'test'
+                else:
+                    return -1
+                eva_obj = Evaluation(data=eva_dataset,
                                      model=transe_model['cur_model'],
                                      num_entity=tsne_meta_data[fig_title]['num entity'],
                                      device=tsne_meta_data[fig_title]['device'])
                 err_entity = eva_obj.get_eva_entity()
-                torch.save(err_entity, tsne_folder + '/' + fig_title + '.pt')
+                file_list = [file_name for file_name in os.listdir('./' + tsne_folder + '/')]
+                if fig_title + '.pt' in file_list:
+                    dataset_type_err = torch.load(tsne_folder + '/' + fig_title + '.pt')
+                    dataset_type_err[dataset_type] = err_entity
+                else:
+                    print('No saved error entities found, creating a new dict...')
+                    dataset_type_err = {dataset_type: err_entity}
+                    print('Done!')
+                torch.save(dataset_type_err, tsne_folder + '/' + fig_title + '.pt')
             else:
                 file_list = [file_name for file_name in os.listdir('./' + tsne_folder + '/')]
                 if fig_title + '.pt' in file_list:
-                    err_entity = torch.load(tsne_folder + '/' + fig_title + '.pt')
+                    dataset_type_err = torch.load(tsne_folder + '/' + fig_title + '.pt')
                 else:
                     print('Error: loading pre-evaluated values')
                     return -1
+            dataset_type_err_keys = list(dataset_type_err.keys())
+            for index, dataset_type in enumerate(dataset_type_err_keys):
+                print(str(index+1) + ') ' + str(dataset_type))
+            select_dataset_type = int(input('Select a datatype form list: ')) - 1
+            if select_dataset_type < 0 or select_dataset_type >= len(dataset_type_err_keys):
+                print('Invalid input.')
+                return -1
             threshold = int(input('Enter a threshold to display error entities: '))
             print('Displaying TSNE for: ', fig_title)
             draw_obj.plot_tsne(title=fig_title,
-                               err_entity=err_entity,
+                               err_entity=dataset_type_err[dataset_type_err_keys[select_dataset_type]],
+                               err_entity_datatype=dataset_type_err_keys[select_dataset_type],
                                threshold=threshold,
                                en_save=save_cond)
 
