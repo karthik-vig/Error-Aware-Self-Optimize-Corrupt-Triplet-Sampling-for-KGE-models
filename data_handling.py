@@ -366,9 +366,3 @@ class Draw:
             plt.savefig(self.fig_save_folder + title + '_' + dis_option)
         else:
             plt.show()
-
-
-
-class HyperParameterOptim:
-    def __init__(self):
-        pass

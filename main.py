@@ -22,9 +22,8 @@ def main():
                                \n4) Training a self-training type 2 model?
                                \n5) Draw graphs for evaluated metrics?
                                \n6) TSNE calculation/plot?
-                               \n7) Hyper Parameter tuning?
-                               \n8) Exit (any other input will be lead to exit)
-                               \n Enter (1, 2, 3, 4, 5): ''')
+                               \n7) Exit (any other input will be lead to exit)
+                               \n Enter (1, 2, 3, 4, 5, 6, 7): ''')
 
     if select_option == '1':
         # Get the transe model:
@@ -282,9 +281,6 @@ def main():
                                err_entity_datatype=dataset_type_err_keys[select_dataset_type],
                                threshold=threshold,
                                en_save=save_cond)
-
-    elif select_option == '7':
-        pass
 
     else:
         return 0
