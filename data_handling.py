@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 import torch
+import matplotlib
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from pykeen.datasets import FB15k237, FB15k, WN18
@@ -241,6 +242,7 @@ class Draw:
         self.check_folder(folder=tsne_folder)
         self.check_file(file_path=self.tsne_folder,
                         file_name='tsne_meta_data.json')
+        matplotlib.rcParams.update({'font.size': 22})
 
     def check_folder(self, folder):
         exist_dir = [dir_name for dir_name in os.listdir('./') if os.path.isdir('./' + dir_name)]
@@ -289,7 +291,9 @@ class Draw:
             plt.plot(x_axis_epochs, metric, label=exp)
         plt.legend(loc='center right')
         if en_save:
-            plt.savefig(self.fig_save_folder + title + ' ' + ylabel)
+            fig = plt.gcf()
+            fig.set_size_inches(10, 8)
+            plt.savefig(self.fig_save_folder + title + ' ' + ylabel, dpi=200)
         else:
             plt.show()
 
