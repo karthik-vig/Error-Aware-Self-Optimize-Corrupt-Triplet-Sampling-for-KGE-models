@@ -232,7 +232,8 @@ class Draw:
                                'MR':1,
                                'MRR':2,
                                'Hits@10':3,
-                               'num_epoch':4
+                               'num_epoch':4,
+                               'init_epoch':5
                                }
         self.fig_save_folder = fig_save_folder + '/'
         self.tsne_folder = tsne_folder + '/'
@@ -256,6 +257,11 @@ class Draw:
     def meta_data_to_list(self, exp_dir_name):
         with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
             meta_data = json.load(json_file)
+            start_model = meta_data['global']['start model']
+            if '.pt' in start_model:
+                init_epoch = int(re.findall('\d+', start_model)[1])
+            else:
+                init_epoch = 0
             all_metrics = [metrics for metrics in meta_data['local'].values()]
             num_epoch = len(all_metrics)
             train_loss = [float(tr_loss['Average Training Loss']) for tr_loss in all_metrics]
@@ -263,9 +269,9 @@ class Draw:
             mrr_val = [float(mrr['MRR']) for mrr in all_metrics]
             hits_at_10_val = [float(hits['Hits@10']) for hits in all_metrics]
             json_file.close()
-        return train_loss, mr_val, mrr_val, hits_at_10_val, num_epoch
+        return train_loss, mr_val, mrr_val, hits_at_10_val, num_epoch, init_epoch
 
-    def plot_metrics(self, met_dict, title, ylabel, en_save):
+    def plot_metrics(self, met_dict, title, ylabel, max_epoch, en_save):
         plt.close()
         plt.title(title)
         plt.xlabel('Epochs')
@@ -274,35 +280,45 @@ class Draw:
             all_metrics = self.meta_data_to_list(exp_dir_name=met_dict[exp])
             num_epoch = all_metrics[self.metric_ret_map['num_epoch']]
             metric = all_metrics[self.metric_ret_map[ylabel]]
-            plt.plot(list(range(1, num_epoch+1)), metric, label=exp)
+            init_epoch = all_metrics[self.metric_ret_map['init_epoch']]
+            end_epoch = init_epoch + num_epoch
+            if end_epoch > max_epoch:
+                end_epoch = max_epoch
+            x_axis_epochs = list(range(init_epoch + 1, end_epoch+1))
+            metric = metric[:len(x_axis_epochs)]
+            plt.plot(x_axis_epochs, metric, label=exp)
         plt.legend(loc='center right')
         if en_save:
             plt.savefig(self.fig_save_folder + title + ' ' + ylabel)
         else:
             plt.show()
 
-    def plot_mr(self, mr_dict, title, en_save=False):
+    def plot_mr(self, mr_dict, title, max_epoch, en_save=False):
         self.plot_metrics(met_dict=mr_dict,
                           title=title,
                           ylabel='MR',
+                          max_epoch=max_epoch,
                           en_save=en_save)
 
-    def plot_mrr(self, mrr_dict, title, en_save=False):
+    def plot_mrr(self, mrr_dict, title, max_epoch, en_save=False):
         self.plot_metrics(met_dict=mrr_dict,
                           title=title,
                           ylabel='MRR',
+                          max_epoch=max_epoch,
                           en_save=en_save)
 
-    def plot_hits(self, hits_dict, title, en_save=False):
+    def plot_hits(self, hits_dict, title, max_epoch, en_save=False):
         self.plot_metrics(met_dict=hits_dict,
                           title=title,
                           ylabel='Hits@10',
+                          max_epoch=max_epoch,
                           en_save=en_save)
 
-    def plot_tr_loss(self, tr_dict, title, en_save=False):
+    def plot_tr_loss(self, tr_dict, title, max_epoch, en_save=False):
         self.plot_metrics(met_dict=tr_dict,
                           title=title,
                           ylabel='Training Loss',
+                          max_epoch=max_epoch,
                           en_save=en_save)
 
     def cal_tsne(self, model_path, title):

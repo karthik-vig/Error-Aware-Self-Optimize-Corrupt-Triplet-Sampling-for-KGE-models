@@ -160,6 +160,7 @@ def main():
             save_cond = False
         fig_title = input('Enter a title for the figures: ')
         num_model_compare = int(input('Enter number of models to display in a graph: '))
+        max_epoch = int(input('Enter max. epoch limit to display: '))
         draw_model_met_dict = {}
         for model_num in range(num_model_compare):
             folder_name = load_data.select_folder()
@@ -167,10 +168,11 @@ def main():
             exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
             model_name = input('Enter model name: ')
             draw_model_met_dict[model_name] = exp_dir_name
-        draw_obj.plot_mr(mr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
-        draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
-        draw_obj.plot_hits(hits_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
-        draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title=fig_title, en_save=save_cond)
+        #print(draw_model_met_dict)
+        draw_obj.plot_mr(mr_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
+        draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
+        draw_obj.plot_hits(hits_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
+        draw_obj.plot_tr_loss(tr_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
 
     elif select_option == '6':
         draw_obj = Draw(fig_save_folder=fig_save_folder, tsne_folder=tsne_folder)
