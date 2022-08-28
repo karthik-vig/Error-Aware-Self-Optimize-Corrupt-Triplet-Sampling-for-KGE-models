@@ -369,7 +369,8 @@ class Draw:
         dis_option = err_entity_keys_list[select_dis_option - 1]
         tsne_emb = np.load(self.tsne_folder + title + '.npy')
         plt.close()
-        #plt.figure(figsize=(20, 30), dpi=1000)
+        fig = plt.gcf()
+        fig.set_size_inches(30, 25)
         plt.title(title)
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
         entity_err_freq_dict = self.err_entity_threshold(err_entity_tensor=err_entity[dis_option],
@@ -379,6 +380,6 @@ class Draw:
                                                          dis_option=dis_option)
         plt.scatter(tsne_emb[list(entity_err_freq_dict.keys()), 0], tsne_emb[list(entity_err_freq_dict.keys()), 1], color='red')
         if en_save:
-            plt.savefig(self.fig_save_folder + title + '_' + dis_option)
+            plt.savefig(self.fig_save_folder + title + '_' + dis_option, dpi=400)
         else:
             plt.show()
