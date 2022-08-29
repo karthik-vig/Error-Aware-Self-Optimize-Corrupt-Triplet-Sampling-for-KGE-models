@@ -292,7 +292,7 @@ class Draw:
         plt.legend(loc='center right')
         if en_save:
             fig = plt.gcf()
-            fig.set_size_inches(10, 8)
+            fig.set_size_inches(15, 10)
             plt.savefig(self.fig_save_folder + title + ' ' + ylabel, dpi=200)
         else:
             plt.show()
