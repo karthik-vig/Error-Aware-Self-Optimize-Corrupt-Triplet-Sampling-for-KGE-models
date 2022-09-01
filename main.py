@@ -196,16 +196,19 @@ def main():
                                               'tail_pred_err_head': {},
                                               'head_pred_err_tail': {},
                                               'head_pred_err_head': {},
+                                              'all_err_entity': {}
                                               },
                                     'val': {'tail_pred_err_tail': {},
                                             'tail_pred_err_head': {},
                                             'head_pred_err_tail': {},
                                             'head_pred_err_head': {},
+                                            'all_err_entity': {}
                                             },
                                     'test': {'tail_pred_err_tail': {},
                                              'tail_pred_err_head': {},
                                              'head_pred_err_tail': {},
                                              'head_pred_err_head': {},
+                                             'all_err_entity': {}
                                              },
                                     }
             with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r+') as json_file:

@@ -11,6 +11,7 @@ from pykeen.datasets import FB15k237, FB15k, WN18
 
 from models import TransE
 
+
 class SaveData:
     def __init__(self, folder):
         self.folder = folder
@@ -23,9 +24,9 @@ class SaveData:
             with open(file_path + 'meta_data.json', 'r+') as json_file:
                 meta_data = json.load(json_file)
                 meta_data['local'][file_name[:-3]] = {'Average Training Loss': float(avg_loss),
-                                                 'MR': -1,
-                                                 'MRR': -1,
-                                                 'Hits@10': -1}
+                                                      'MR': -1,
+                                                      'MRR': -1,
+                                                      'Hits@10': -1}
                 meta_data['global']['latest epoch'] = int(epoch)
                 for key, value in kwargs.items():
                     meta_data['global'][key] = value
@@ -64,7 +65,7 @@ class LoadMetaDataHandling:
     def select_folder(self):
         print('Select model folder:')
         for index, folder in enumerate(self.folder_list):
-            print(str(index+1) + ') ' + folder)
+            print(str(index + 1) + ') ' + folder)
         select_eva_model = int(input('Enter a number: '))
         if select_eva_model > 0 and select_eva_model <= len(self.folder_list):
             return self.folder_list[select_eva_model - 1]
@@ -80,7 +81,8 @@ class LoadMetaDataHandling:
         return select_exp_num
 
     def select_model_num(self, exp_dir_name, range_mode=True):
-        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir('./' + exp_dir_name) if '.pt' in model_name]
+        model_num_list = [int(re.findall('\d+', model_name)[0]) for model_name in os.listdir('./' + exp_dir_name) if
+                          '.pt' in model_name]
         start_model_num = min(model_num_list)
         end_model_num = max(model_num_list)
         print('Model number range is: ', start_model_num, ' to ', end_model_num)
@@ -185,7 +187,8 @@ class LoadMetaDataHandling:
 
     def choose_dataset(self, automatic_input=None):
         if automatic_input == None:
-            select_dataset = input('''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
+            select_dataset = input(
+                '''1)FB15K\n2)FB15K237\n3)WN18\n4)Exit (any other input will lead to exit)\nEnter 1,2,3 or 4:''')
         else:
             select_dataset = automatic_input
         if select_dataset == '1':
@@ -227,14 +230,15 @@ class LoadMetaDataHandling:
             json_file.close()
             return meta_data
 
+
 class Draw:
     def __init__(self, fig_save_folder='', tsne_folder=''):
-        self.metric_ret_map = {'Training Loss':0,
-                               'MR':1,
-                               'MRR':2,
-                               'Hits@10':3,
-                               'num_epoch':4,
-                               'init_epoch':5
+        self.metric_ret_map = {'Training Loss': 0,
+                               'MR': 1,
+                               'MRR': 2,
+                               'Hits@10': 3,
+                               'num_epoch': 4,
+                               'init_epoch': 5
                                }
         self.fig_save_folder = fig_save_folder + '/'
         self.tsne_folder = tsne_folder + '/'
@@ -286,7 +290,7 @@ class Draw:
             end_epoch = init_epoch + num_epoch
             if end_epoch > max_epoch:
                 end_epoch = max_epoch
-            x_axis_epochs = list(range(init_epoch + 1, end_epoch+1))
+            x_axis_epochs = list(range(init_epoch + 1, end_epoch + 1))
             metric = metric[:len(x_axis_epochs)]
             plt.plot(x_axis_epochs, metric, label=exp)
         plt.legend(loc='center right')
@@ -330,7 +334,8 @@ class Draw:
         print('Model: ', model_path)
         transe_model = torch.load(model_path)
         entity_emb, relation_emb = transe_model['cur_model'].get_embeddings()
-        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(entity_emb.cpu())
+        tsne_emb = TSNE(n_components=2, perplexity=30, learning_rate='auto', n_iter=1000, init='random').fit_transform(
+            entity_emb.cpu())
         print('Done!!')
         with open(self.tsne_folder + title + '.npy', 'wb') as numpy_file:
             np.save(numpy_file, tsne_emb)
@@ -354,8 +359,10 @@ class Draw:
         with open(self.tsne_folder + 'tsne_meta_data.json', 'r+') as json_file:
             tsne_meta_data = json.load(json_file)
             tsne_meta_data[title][err_entity_datatype][dis_option]['threshold'] = int(threshold)
-            tsne_meta_data[title][err_entity_datatype][dis_option]['ratio of errors over threshold'] = float(select_errs / total_errs)
-            tsne_meta_data[title][err_entity_datatype][dis_option]['ratio of entities over threshold'] = float(select_num_unique_entities / total_num_unique_entities)
+            tsne_meta_data[title][err_entity_datatype][dis_option]['ratio of errors over threshold'] = float(
+                select_errs / total_errs)
+            tsne_meta_data[title][err_entity_datatype][dis_option]['ratio of entities over threshold'] = float(
+                select_num_unique_entities / total_num_unique_entities)
             json_file.seek(0)
             json.dump(tsne_meta_data, json_file, indent=4)
             json_file.truncate()
@@ -366,7 +373,7 @@ class Draw:
         print('Choose an option: ')
         err_entity_keys_list = list(err_entity.keys())
         for index, key in enumerate(err_entity_keys_list):
-            print(str(index+1) + ') ' + str(key))
+            print(str(index + 1) + ') ' + str(key))
         select_dis_option = int(input('Enter an option: '))
         if select_dis_option <= 0 or select_dis_option > len(err_entity_keys_list):
             return -1
@@ -377,12 +384,14 @@ class Draw:
         fig.set_size_inches(30, 25)
         plt.title(title)
         plt.scatter(tsne_emb[:, 0], tsne_emb[:, 1])
-        entity_err_freq_dict = self.err_entity_threshold(err_entity_tensor=err_entity[dis_option],
-                                                         err_entity_datatype=err_entity_datatype,
-                                                         threshold=threshold,
-                                                         title=title,
-                                                         dis_option=dis_option)
-        plt.scatter(tsne_emb[list(entity_err_freq_dict.keys()), 0], tsne_emb[list(entity_err_freq_dict.keys()), 1], color='red')
+        entity_err_freq_dict = self. \
+            err_entity_threshold(err_entity_tensor=err_entity[dis_option],
+                                 err_entity_datatype=err_entity_datatype,
+                                 threshold=threshold,
+                                 title=title,
+                                 dis_option=dis_option)
+        plt.scatter(tsne_emb[list(entity_err_freq_dict.keys()), 0], tsne_emb[list(entity_err_freq_dict.keys()), 1],
+                    color='red')
         if en_save:
             plt.savefig(self.fig_save_folder + title + '_' + dis_option, dpi=400)
         else:

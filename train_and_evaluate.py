@@ -120,6 +120,7 @@ class Evaluation:
                       'tail_pred_err_head': [],
                       'head_pred_err_tail': [],
                       'head_pred_err_head': [],
+                      'all_err_entity': []
                       }
         for index, triplet in enumerate(self.dataset):
             # get tail rank
@@ -134,4 +135,6 @@ class Evaluation:
                 err_entity['head_pred_err_head'].append(triplet[0])
         for key in err_entity.keys():
             err_entity[key] = torch.tensor(err_entity[key])
+        err_entity['all_err_entity'] = torch.cat((err_entity['tail_pred_err_tail'],
+                                                  err_entity['head_pred_err_head']))
         return err_entity
