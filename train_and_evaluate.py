@@ -24,12 +24,15 @@ class TransETrain(SaveData):
         self.train_data_loader = self.create_dataloader(self.train_dataset)
 
     def create_dataloader(self, dataset):
+        # create a dataloader and return it
         tensor_dataset = TensorDataset(dataset)
         return DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
     def create_corr_triplet(self, sample_data):
         corr_triplet = sample_data.clone().detach()
+        # choose head or tail replacement randomly.
         head_or_tail = torch.randint(0, 2, (1,))
+        # get a random entity to use as replacement
         entity_tensor = torch.randint(0, self.num_entity, (sample_data.shape[0],))
         if head_or_tail == 0:
             corr_triplet[:, 0] = entity_tensor

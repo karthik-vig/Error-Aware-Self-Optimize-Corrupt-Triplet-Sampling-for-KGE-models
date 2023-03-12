@@ -47,6 +47,7 @@ def main():
         transe_model_train.train()
 
     elif select_option == '2':
+        # select the model evaluate
         evaluate_model = load_data.select_folder()
         if evaluate_model == -1:
             return -1
@@ -118,7 +119,6 @@ def main():
         if meta_data['global']['latest epoch'] == 0:
             num_model_train = int(input('Enter number of models to train: '))
             meta_data = load_data.meta_data_add_field(exp_dir_name=exp_dir_name,
-                                                      # cur_model_num=1,
                                                       num_model_train=num_model_train)
             start_epoch = 1
             start_model = 1
@@ -153,13 +153,16 @@ def main():
 
     elif select_option == '5':
         draw_obj = Draw(fig_save_folder=fig_save_folder, tsne_folder=tsne_folder)
+        # get input from the user with several options
         save_fig = input('Enable Save Figure? (y/n): ')
         if save_fig == 'y':
             save_cond = True
         else:
             save_cond = False
+        # fig title is the save file and image's main title
         fig_title = input('Enter a title for the figures: ')
         num_model_compare = int(input('Enter number of models to display in a graph: '))
+        #limit the number of epochs being displayed
         max_epoch = int(input('Enter max. epoch limit to display: '))
         draw_model_met_dict = {}
         for model_num in range(num_model_compare):
@@ -168,7 +171,7 @@ def main():
             exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
             model_name = input('Enter model name: ')
             draw_model_met_dict[model_name] = exp_dir_name
-        #print(draw_model_met_dict)
+        # print(draw_model_met_dict)
         draw_obj.plot_mr(mr_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
         draw_obj.plot_mrr(mrr_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
         draw_obj.plot_hits(hits_dict=draw_model_met_dict, title=fig_title, max_epoch=max_epoch, en_save=save_cond)
@@ -176,9 +179,11 @@ def main():
 
     elif select_option == '6':
         draw_obj = Draw(fig_save_folder=fig_save_folder, tsne_folder=tsne_folder)
+        # the process is to create t-SNE data values
         select_tsne_option = input('Calculate a new TSNE values (y) or plot exiting ones (n)?: ')
         if select_tsne_option == 'y':
             folder_name = load_data.select_folder()
+            # let the user select the model to evaluate using t-SNE
             exp_num = load_data.select_exp(folder=folder_name)
             exp_dir_name = folder_name + '/' + 'exp_' + str(exp_num) + '/'
             model_num = load_data.select_model_num(exp_dir_name=exp_dir_name, range_mode=False)
@@ -188,6 +193,7 @@ def main():
             with open(exp_dir_name + 'meta_data.json', 'r') as json_file:
                 meta_data = json.load(json_file)
                 json_file.close()
+            #create a meta data file to keep track of evaluation metrics made for t-SNE
             tsne_model_meta_data = {'model_path': model_path,
                                     'dataset name': meta_data['global']['dataset name'],
                                     'num entity': meta_data['global']['num entity'],
@@ -211,6 +217,7 @@ def main():
                                              'all_err_entity': {}
                                              },
                                     }
+            # open meta data file and write to it.
             with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r+') as json_file:
                 tsne_meta_data = json.load(json_file)
                 tsne_meta_data[title] = tsne_model_meta_data
@@ -219,6 +226,7 @@ def main():
                 json_file.truncate()
                 json_file.close()
         else:
+            # option to save figure
             save_fig = input('Enable Save Figure? (y/n): ')
             if save_fig == 'y':
                 save_cond = True
@@ -232,6 +240,7 @@ def main():
             # fig_title = input('Enter a title for the figures: ')
             select_get_err_index_option = input('Evaluate new error index (y) or load from disk (n)?: ')
             if select_get_err_index_option == 'y':
+                #get the meta data file
                 with open(tsne_folder + '/' + 'tsne_meta_data.json', 'r') as json_file:
                     tsne_meta_data = json.load(json_file)
                     json_file.close()
@@ -239,7 +248,7 @@ def main():
                 dataset_name = tsne_meta_data[fig_title]['dataset name']
                 load_data.choose_dataset(automatic_input=dataset_num_map[dataset_name])
                 train_dataset, val_dataset, test_dataset = load_data.get_dataset()
-                select_dataset = input('Enter a dataset: training (1), validation (2), test (3), exit (4): ')
+                select_dataset = input('Enter a dataset split: training (1), validation (2), test (3), exit (4): ')
                 if select_dataset == '1':
                     eva_dataset = train_dataset
                     dataset_type = 'train'
@@ -274,7 +283,7 @@ def main():
                     return -1
             dataset_type_err_keys = list(dataset_type_err.keys())
             for index, dataset_type in enumerate(dataset_type_err_keys):
-                print(str(index+1) + ') ' + str(dataset_type))
+                print(str(index + 1) + ') ' + str(dataset_type))
             select_dataset_type = int(input('Select a datatype form list: ')) - 1
             if select_dataset_type < 0 or select_dataset_type >= len(dataset_type_err_keys):
                 print('Invalid input.')
